@@ -1,0 +1,27 @@
+# Windows / macOS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Caches and generated dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+.cache/
+.npm/
+
+# Local environment and temporary output
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.bak
+*.zip

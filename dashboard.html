@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>位你而来——校园数字孪生地图领航者</title>
+  <script>window.CESIUM_BASE_URL = "./vendor/cesium/";</script>
+  <link href="./vendor/cesium/Widgets/widgets.css"
+    rel="stylesheet" type="text/css" />
+  <script src="./vendor/cesium/Cesium.js"
+    type="text/javascript"></script>
+  <link href="./vendor/mars3d/mars3d.css" rel="stylesheet" type="text/css" />
+  <script src="./vendor/mars3d/mars3d.js" type="text/javascript"></script>
+  <style>
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: "微软雅黑";
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a202c;
+      color: white;
+      height: 100vh;
+    }
+
+    .header {
+      height: 60px;
+      background: #2d3748;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 1px solid #4a5568;
+    }
+
+    .header-title {
+      font-size: 18px;
+      color: #90cdf4;
+      font-weight: bold;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logout {
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .logout:hover {
+      background: #4a5568;
+    }
+
+    .main {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      width: 200px;
+      background: #2d3748;
+      padding: 20px 0;
+    }
+
+    .menu-item {
+      padding: 15px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 14px;
+    }
+
+    .menu-item.active {
+      background: #4a5568;
+      color: #90cdf4;
+      border-left: 3px solid #3182ce;
+    }
+
+    .menu-item:hover {
+      background: #374151;
+    }
+
+    .cesium-box {
+      flex: 1;
+      height: 100%;
+    }
+
+    .mars3d-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .panel {
+      width: 350px;
+      background: #2d3748;
+      border-left: 1px solid #4a5568;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title {
+      padding: 15px 20px;
+      border-bottom: 1px solid #4a5568;
+      color: #90cdf4;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .panel-content {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .query-item {
+      margin-bottom: 20px;
+    }
+
+    .query-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #e2e8f0;
+    }
+
+    .query-input,
+    .qa-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px;
+      background: #374151;
+      border: 1px solid #4a5568;
+      color: white;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .query-input:focus,
+    .qa-input:focus {
+      outline: none;
+      border-color: #3182ce;
+    }
+
+    .query-btn {
+      width: 100%;
+      height: 35px;
+      background: #3182ce;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .query-btn:hover {
+      background: #2b6cb0;
+    }
+
+    .result-box,
+    .qa-result {
+      padding: 10px;
+      background: #374151;
+      border-radius: 4px;
+      min-height: 100px;
+      font-size: 12px;
+      color: #e2e8f0;
+      line-height: 1.6;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #4a5568;
+    }
+
+    .result-box::-webkit-scrollbar,
+    .qa-result::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .result-box::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 3px;
+    }
+
+    .export-btn {
+      width: 100%;
+      height: 35px;
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    .export-btn:hover {
+      background: #16a34a;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+      color: #90cdf4;
+      font-size: 12px;
+    }
+
+    .mobile-btn {
+      display: none;
+      border: none;
+      background: transparent;
+      color: #90cdf4;
+      font-size: 22px;
+      padding: 6px 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .menu-item,
+    .query-btn,
+    .export-btn,
+    .logout {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 移动端遮罩层 */
+    .drawer-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.28s ease;
+    }
+
+    .drawer-mask.show {
+      opacity: 1;
+    }
+
+    /* select 统一样式 */
+    #travelMode {
+      width: 100%;
+      padding: 8px 10px;
+      margin: 10px 0;
+      background: #374151;
+      border: 1px solid #4a5568;
+      color: white;
+      border-radius: 4px;
+      font-size: 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2390cdf4' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    #travelMode:focus {
+      outline: none;
+      border-color: #3182ce;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        height: 56px;
+        padding: 0 12px;
+      }
+
+      .header-title {
+        font-size: 15px;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 8px;
+      }
+
+      .user-info {
+        display: none;
+      }
+
+      /* 侧边栏：用 visibility+opacity+transform 保证动画流畅 */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 56px;
+        z-index: 1200;
+        width: 260px;
+        height: calc(100vh - 56px);
+        background: #2d3748;
+        transform: translateX(-100%);
+        transition: transform 0.28s ease, visibility 0.28s;
+        visibility: hidden;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.45);
+        overflow-y: auto;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+        visibility: visible;
+      }
+
+      /* 底部面板 */
+      .panel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1200;
+        max-height: 52vh;
+        height: auto;
+        background: #2d3748;
+        transform: translateY(100%);
+        transition: transform 0.28s ease, visibility 0.28s;
+        visibility: hidden;
+        border-left: none;
+        border-top: 1px solid #4a5568;
+        box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.45);
+        overflow-y: auto;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .panel.open {
+        transform: translateY(0);
+        visibility: visible;
+      }
+
+      .panel-title {
+        position: sticky;
+        top: 0;
+        background: #2d3748;
+        z-index: 1;
+        padding: 12px 16px;
+      }
+
+      .main {
+        display: block;
+        height: calc(100vh - 56px);
+      }
+
+      .cesium-box {
+        position: absolute;
+        left: 0;
+        top: 56px;
+        right: 0;
+        bottom: 0;
+        height: auto;
+        width: 100%;
+      }
+
+      .mars3d-container {
+        width: 100%;
+        height: 100%;
+      }
+
+      .panel-content {
+        padding: 12px 14px;
+      }
+
+      .query-input,
+      .qa-input {
+        height: 44px;
+        font-size: 15px;
+      }
+
+      .query-btn,
+      .export-btn {
+        height: 40px;
+        font-size: 15px;
+      }
+
+      .menu-item {
+        padding: 14px 16px;
+        font-size: 15px;
+      }
+
+      .mobile-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .drawer-mask {
+        display: block;
+      }
+
+      .result-box,
+      .qa-result {
+        max-height: 180px;
+      }
+
+      /* 路径规划按钮竖向排列 */
+      .panel-tab#pathTab .query-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .panel-tab#pathTab .query-item .query-btn {
+        margin-bottom: 0;
+      }
+
+      #travelMode {
+        height: 44px;
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 移动端抽屉遮罩 -->
+  <div class="drawer-mask" id="drawerMask"></div>
+
+  <div class="header">
+    <div class="header-title">位你而来——校园数字孪生地图领航者</div>
+    <button id="menuBtn" class="mobile-btn" aria-label="打开菜单">☰</button>
+    <button id="panelBtn" class="mobile-btn" aria-label="打开面板">▤</button>
+    <div class="user-info">
+      <span id="userName">欢迎您，admin</span>
+      <button class="logout" id="logoutBtn">退出登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="menu-item active" data-tab="model">模型浏览</div>
+      <div class="menu-item" data-tab="attr">属性查询</div>
+      <div class="menu-item" data-tab="space">空间查询</div>
+      <div class="menu-item" data-tab="qa">建筑查询</div>
+      <div class="menu-item" data-tab="export">数据导出</div>
+      <div class="menu-item" data-tab="path">路径规划</div>
+    </div>
+
+    <div class="cesium-box">
+      <div id="mars3dContainer" class="mars3d-container"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-tab" id="modelTab">
+        <div class="panel-title">模型浏览</div>
+        <div class="panel-content">
+          <p style="font-size: 12px; color: #94a3b8; margin-bottom: 15px; line-height: 1.6;">
+            鼠标左键拖拽旋转，滚轮缩放，右键平移，点击建筑查看属性。
+          </p>
+          <div class="result-box" id="modelInfo">
+            校园三维模型已加载，可通过鼠标浏览并点击建筑查看信息。
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-tab" id="attrTab" style="display: none;">
+        <div class="panel-title">属性查询</div>
+        <div class="panel-content">
+          <div class="query-item">
+            <label class="query-label">输入建筑名称：</label>
+            <input type="text" class="query-input" id="attrInput" placeholder="如：图书馆、教学楼、体育馆">
+            <button class="query-btn" id="attrBtn">查询属性</button>
+            <div class="loading" id="attrLoading">查询中...</div>
+            <div class="result-box" id="attrResult">
+              输入建筑名称，查询对应属性信息。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-tab" id="spaceTab" style="display: none;">
+        <div class="panel-title">空间查询</div>
+        <div class="panel-content">
+          <div class="query-item">
+            <label class="query-label">输入查询范围（米）：</label>
+            <input type="text" class="query-input" id="spaceInput" placeholder="如：50（查询当前视角50米范围内的建筑）">
+            <button class="query-btn" id="spaceBtn">空间查询</button>
+            <div class="loading" id="spaceLoading">查询中...</div>
+            <div class="result-box" id="spaceResult">
+              输入范围半径，查询当前视角附近的建筑。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-tab" id="qaTab" style="display: none;">
+        <div class="panel-title">建筑查询</div>
+        <div class="panel-content">
+          <input type="text" class="qa-input" id="qaInput" placeholder="如：数学楼在哪、教科院在哪">
+          <button class="query-btn" id="qaBtn">查询</button>
+          <div class="loading" id="qaLoading">查询中...</div>
+          <div class="qa-result" id="qaResult">
+            输入建筑或学院名称，系统将在地图中定位。
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-tab" id="pathTab" style="display: none;">
+        <div class="panel-title">最短路径导航</div>
+        <div class="panel-content">
+          <div style="margin-bottom: 10px;">
+            <label style="display:block; font-size: 12px; color: #a0aec0;">起点名称：</label>
+            <input type="text" class="query-input" id="startNode" placeholder="例如：南门">
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label style="display:block; font-size: 12px; color: #a0aec0;">终点名称：</label>
+            <input type="text" class="query-input" id="endNode" placeholder="例如：图书馆（新）">
+          </div>
+          <div class="query-item">
+            <button class="query-btn" onclick="startPicking('start')">在地图上选起点</button>
+            <button class="query-btn" onclick="startPicking('end')" style="background: #ed8936;">在地图上选终点</button>
+          </div>
+          <select id="travelMode" style="width: 100%; padding: 5px; margin: 10px 0;">
+            <option value="walking">步行模式</option>
+            <option value="ebike">电动车模式</option>
+            <option value="driving">驾车模式</option>
+          </select>
+          <button class="query-btn" id="planBtn">开始路径规划</button>
+          <button class="query-btn" id="clearPathBtn" style="margin-top: 8px; background: #4a5568;">清除路径</button>
+          <div id="pathInfo" style="margin-top: 15px; font-size: 13px; line-height: 1.6; color: #63b3ed;"></div>
+        </div>
+      </div>
+
+      <div class="panel-tab" id="exportTab" style="display: none;">
+        <div class="panel-title">数据导出</div>
+        <div class="panel-content">
+          <button class="export-btn" id="exportJsonBtn">导出JSON格式</button>
+          <button class="export-btn" id="exportExcelBtn" style="margin-top: 10px;">导出Excel格式</button>
+          <div class="result-box" style="margin-top: 15px;">
+            支持导出校园建筑属性数据，JSON格式供程序调用，Excel(CSV)格式可直接用表格软件打开。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+
+</html>
