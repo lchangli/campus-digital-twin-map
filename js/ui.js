@@ -1,5 +1,7 @@
-// 通用界面：会话提示、菜单、移动抽屉与窄屏地图设置。
+// 地图工作台：会话、功能面板、地图选点提示与窄屏设置。
 (function () {
+  let controls;
+
   function initSession() {
     if (!localStorage.getItem('isLogin')) {
       alert('请先登录系统！');
@@ -13,13 +15,9 @@
     if (!toast) {
       toast = document.createElement('div');
       toast.id = '_mobileToast';
-      toast.style.cssText = [
-        'position:fixed', 'bottom:80px', 'left:50%', 'transform:translateX(-50%)',
-        'background:rgba(30,40,60,0.92)', 'color:#fff', 'padding:10px 20px',
-        'border-radius:20px', 'font-size:14px', 'z-index:9999',
-        'pointer-events:none', 'white-space:nowrap', 'max-width:80vw',
-        'text-align:center', 'line-height:1.5', 'transition:opacity .3s'
-      ].join(';');
+      toast.className = 'app-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
       document.body.appendChild(toast);
     }
     toast.textContent = msg;
@@ -28,148 +26,195 @@
     toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, duration);
   }
 
-  function init({ viewer, getBuildingLayer }) {
-    const menuItems = document.querySelectorAll('.menu-item');
-    const panelTabs = document.querySelectorAll('.panel-tab');
+  function init({ viewer, getBuildingLayer, cancelPicking = () => {} }) {
+    if (controls) return controls;
+
+    const menuItems = [...document.querySelectorAll('.menu-item')];
+    const panelTabs = [...document.querySelectorAll('.panel-tab')];
+    const panel = document.getElementById('toolPanel');
+    const panelScroll = panel.querySelector('.panel-scroll');
+    const heading = document.getElementById('panelHeading');
+    const pickNotice = document.getElementById('pickNotice');
+    const pickNoticeText = document.getElementById('pickNoticeText');
+    const cancelPickBtn = document.getElementById('cancelPickBtn');
+    const helpToggle = document.getElementById('helpToggle');
+    const helpTip = document.getElementById('helpTip');
+    const titles = {
+      model: '模型浏览', attr: '属性查询', space: '空间查询',
+      qa: '建筑查询', export: '数据导出', path: '路径规划'
+    };
+    let activeTab = 'model';
+    let panelOpen = false;
+    let pickMode = null;
+    let savedScrollTop = 0;
+    const isMobile = () => window.innerWidth <= 768;
+    const currentNav = () => menuItems.find(item => item.dataset.tab === activeTab);
+    const focusElement = element => element?.focus({ preventScroll: true });
+
+    function selectTab(tab) {
+      if (tab === activeTab) return;
+      activeTab = tab;
+      savedScrollTop = 0;
+      panelScroll.scrollTop = 0;
+    }
+
+    function syncPanel() {
+      const visible = panelOpen && !(pickMode && isMobile());
+      if (!panel.hidden) savedScrollTop = panelScroll.scrollTop;
+      const focusInInactiveTab = panelTabs.some(tab =>
+        tab.id !== `${activeTab}Tab` && tab.contains(document.activeElement));
+      // 先移动焦点，再隐藏面板，避免键盘停留在不可见的表单中。
+      if (!visible && panel.contains(document.activeElement)) {
+        focusElement(pickMode ? cancelPickBtn : currentNav());
+      }
+      panel.hidden = !visible;
+      panel.inert = !visible;
+      document.body.classList.toggle('panel-open', visible);
+      heading.textContent = titles[activeTab];
+      panelTabs.forEach(tab => {
+        const selected = visible && tab.id === `${activeTab}Tab`;
+        tab.hidden = !selected;
+        tab.inert = !selected;
+      });
+      if (visible) panelScroll.scrollTop = savedScrollTop;
+      if (pickNotice.hidden && pickNotice.contains(document.activeElement)) {
+        focusElement(visible ? heading : currentNav());
+      } else if (visible && focusInInactiveTab) {
+        focusElement(heading);
+      }
+      menuItems.forEach(item => {
+        const selected = item.dataset.tab === activeTab;
+        item.classList.toggle('active', selected);
+        item.setAttribute('aria-expanded', String(selected && visible));
+        if (selected) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+      });
+    }
+
+    function syncPickNotice() {
+      pickNotice.hidden = !pickMode;
+      pickNotice.inert = !pickMode;
+      pickNoticeText.textContent = pickMode === 'start'
+        ? '请在地图上点击选择起点'
+        : pickMode === 'end' ? '请在地图上点击选择终点' : '';
+    }
+
+    function stopPicking() {
+      const wasPicking = Boolean(pickMode);
+      // 先清本地状态，回调中的 setPickMode(null) 不会重新打开其他面板。
+      pickMode = null;
+      syncPickNotice();
+      if (wasPicking) cancelPicking();
+    }
+
+    function openPanel(tab, { focus = false } = {}) {
+      if (!titles[tab]) return;
+      selectTab(tab);
+      panelOpen = true;
+      if (tab !== 'path') stopPicking();
+      syncPanel();
+      if (focus && !panel.hidden) focusElement(heading);
+    }
+
+    function closePanel({ focus = true } = {}) {
+      panelOpen = false;
+      stopPicking();
+      syncPanel();
+      if (focus) focusElement(currentNav());
+    }
+
+    function setPickMode(mode) {
+      pickMode = mode === 'start' || mode === 'end' ? mode : null;
+      if (pickMode) {
+        selectTab('path');
+        panelOpen = true;
+      }
+      syncPickNotice();
+      syncPanel();
+    }
+
     menuItems.forEach(item => {
       item.addEventListener('click', () => {
-        menuItems.forEach(mi => mi.classList.remove('active'));
-        item.classList.add('active');
-
-        const tabId = item.dataset.tab + 'Tab';
-        panelTabs.forEach(tab => tab.style.display = 'none');
-        document.getElementById(tabId).style.display = 'block';
+        selectTab(item.dataset.tab);
+        panelOpen = activeTab !== 'model';
+        stopPicking();
+        syncPanel();
+        if (panelOpen) focusElement(heading);
       });
     });
+    document.getElementById('panelCloseBtn').addEventListener('click', () => closePanel());
+    cancelPickBtn.addEventListener('click', () => {
+      stopPicking();
+      syncPanel();
+      focusElement(heading);
+    });
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    logoutBtn.addEventListener('click', () => {
+    function setHelpVisible(visible, { focus = false } = {}) {
+      if (!visible && helpTip.contains(document.activeElement)) focus = true;
+      helpTip.hidden = !visible;
+      helpTip.inert = !visible;
+      helpToggle.setAttribute('aria-expanded', String(visible));
+      if (focus) focusElement(helpToggle);
+    }
+    helpToggle.addEventListener('click', () => setHelpVisible(helpTip.hidden));
+    document.getElementById('helpDismiss').addEventListener('click', () => setHelpVisible(false));
+    setHelpVisible(!helpTip.hidden);
+
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (!helpTip.hidden && (helpTip.contains(document.activeElement) || document.activeElement === helpToggle)) {
+        setHelpVisible(false, { focus: true });
+      } else if (pickMode && isMobile()) {
+        stopPicking();
+        syncPanel();
+        focusElement(heading);
+      } else if (panelOpen) {
+        closePanel();
+      } else if (!helpTip.hidden) {
+        setHelpVisible(false, { focus: true });
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
       if (confirm('确定要退出登录吗？')) {
         localStorage.removeItem('isLogin');
         localStorage.removeItem('username');
         window.location.href = 'index.html';
       }
     });
-    const sidebar = document.querySelector('.sidebar');
-    const panel = document.querySelector('.panel');
-    const menuBtn = document.getElementById('menuBtn');
-    const panelBtn = document.getElementById('panelBtn');
-    const mask = document.getElementById('drawerMask');
-    let maskHideTimer;
-    const hasOpenDrawer = () => sidebar?.classList.contains('open') || panel?.classList.contains('open');
-
-    // 移动端 CSS 中遮罩占满屏幕，初始必须隐藏，避免透明遮罩拦截点击。
-    if (mask) {
-      mask.style.display = 'none';
-      mask.classList.remove('show');
-    }
-
-    function syncMask() {
-      if (!mask) return;
-      clearTimeout(maskHideTimer);
-      if (hasOpenDrawer()) {
-        mask.style.display = 'block';
-        requestAnimationFrame(() => {
-          if (hasOpenDrawer()) mask.classList.add('show');
-        });
-      } else {
-        mask.classList.remove('show');
-        maskHideTimer = setTimeout(() => {
-          if (!hasOpenDrawer()) mask.style.display = 'none';
-        }, 280);
-      }
-    }
-
-    function openDrawer(el) {
-      el.classList.add('open');
-      syncMask();
-    }
-
-    function closeDrawer(el) {
-      el.classList.remove('open');
-      syncMask();
-    }
-
-    function closeAll() {
-      if (sidebar) closeDrawer(sidebar);
-      if (panel) closeDrawer(panel);
-    }
-
-    if (menuBtn && sidebar) {
-      menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const opening = !sidebar.classList.contains('open');
-        if (panel) closeDrawer(panel);
-        opening ? openDrawer(sidebar) : closeDrawer(sidebar);
-      });
-    }
-
-    if (panelBtn && panel) {
-      panelBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const opening = !panel.classList.contains('open');
-        if (sidebar) closeDrawer(sidebar);
-        opening ? openDrawer(panel) : closeDrawer(panel);
-      });
-    }
-
-    if (mask) {
-      mask.addEventListener('click', closeAll);
-    }
-
-    document.addEventListener('click', (e) => {
-      if (window.innerWidth <= 768) {
-        if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-          closeDrawer(sidebar);
-        }
-        if (panel && panel.classList.contains('open') && !panel.contains(e.target) && !panelBtn.contains(e.target)) {
-          closeDrawer(panel);
-        }
-      }
-    });
-
-    // 菜单项点击后在移动端自动关闭侧边栏并打开面板
-    document.querySelectorAll('.menu-item').forEach(item => {
-      item.addEventListener('click', (event) => {
-        if (window.innerWidth <= 768) {
-          event.stopPropagation();
-          closeDrawer(sidebar);
-          openDrawer(panel);
-        }
-      });
-    });
 
     function applyMobileCesiumTweaks() {
       const tiles3dLayer = getBuildingLayer();
-      try {
-        if (viewer && viewer.scene && viewer.scene.postProcessStages) {
-          try { viewer.scene.postProcessStages.removeAll(); } catch (e) { }
-        }
-
-        if (typeof tiles3dLayer !== 'undefined' && tiles3dLayer) {
-          try {
-            if (tiles3dLayer.maximumScreenSpaceError !== undefined) tiles3dLayer.maximumScreenSpaceError = 8;
-          } catch (e) { }
-        }
-        if (viewer && viewer.scene && viewer.scene.screenSpaceCameraController) {
-          const c = viewer.scene.screenSpaceCameraController;
-          c.enableRotate = true;
-          c.enableTranslate = true;
-          c.enableZoom = true;
-          c.enableTilt = true;
-        }
-      } catch (err) {
-        console.warn('mobile tweaks failed', err);
+      if (tiles3dLayer && tiles3dLayer.maximumScreenSpaceError !== undefined) {
+        tiles3dLayer.maximumScreenSpaceError = 8;
+      }
+      const cameraControl = viewer?.scene?.screenSpaceCameraController;
+      if (cameraControl) {
+        cameraControl.enableRotate = true;
+        cameraControl.enableTranslate = true;
+        cameraControl.enableZoom = true;
+        cameraControl.enableTilt = true;
       }
     }
 
-    function checkAndApply() {
-      if (window.innerWidth <= 768) applyMobileCesiumTweaks();
-      else closeAll();
+    function onResize() {
+      if (isMobile()) applyMobileCesiumTweaks();
+      syncPanel();
     }
-    window.addEventListener('resize', checkAndApply);
-    checkAndApply();
+    controls = { openPanel, closePanel, setPickMode };
+    window.addEventListener('resize', onResize);
+    syncPickNotice();
+    onResize();
+    return controls;
   }
 
-  globalThis.CampusUI = { initSession, init, showToast };
+  globalThis.CampusUI = {
+    initSession, init, showToast,
+    openPanel: (...args) => controls?.openPanel(...args),
+    closePanel: (...args) => controls?.closePanel(...args),
+    setPickMode: (...args) => controls?.setPickMode(...args)
+  };
 })();

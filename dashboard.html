@@ -1,559 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>位你而来——校园数字孪生地图领航者</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1623">
+  <meta name="description" content="浏览校园三维建筑、查询空间信息，规划校园出行路线。">
+  <title>校园数字孪生地图平台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 44'%3E%3Cpath fill='%230f1623' d='M0 0h40v44H0z'/%3E%3Cpath d='M20 40S5 28 5 17a15 15 0 0 1 30 0c0 11-15 23-15 23Z' fill='none' stroke='%2363b3ed' stroke-width='2'/%3E%3Cpath d='M14 25V11h12v14M18 15h4m-4 5h4m-12 5h20' fill='none' stroke='%2363b3ed' stroke-width='2'/%3E%3C/svg%3E">
   <script>window.CESIUM_BASE_URL = "./vendor/cesium/";</script>
-  <link href="./vendor/cesium/Widgets/widgets.css"
-    rel="stylesheet" type="text/css" />
-  <script src="./vendor/cesium/Cesium.js"
-    type="text/javascript"></script>
-  <link href="./vendor/mars3d/mars3d.css" rel="stylesheet" type="text/css" />
-  <script src="./vendor/mars3d/mars3d.js" type="text/javascript"></script>
-  <style>
-    html,
-    body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: "微软雅黑";
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: #1a202c;
-      color: white;
-      height: 100vh;
-    }
-
-    .header {
-      height: 60px;
-      background: #2d3748;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 20px;
-      border-bottom: 1px solid #4a5568;
-    }
-
-    .header-title {
-      font-size: 18px;
-      color: #90cdf4;
-      font-weight: bold;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .logout {
-      cursor: pointer;
-      padding: 5px 10px;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-
-    .logout:hover {
-      background: #4a5568;
-    }
-
-    .main {
-      display: flex;
-      height: calc(100vh - 60px);
-    }
-
-    .sidebar {
-      width: 200px;
-      background: #2d3748;
-      padding: 20px 0;
-    }
-
-    .menu-item {
-      padding: 15px 20px;
-      cursor: pointer;
-      transition: background 0.2s;
-      font-size: 14px;
-    }
-
-    .menu-item.active {
-      background: #4a5568;
-      color: #90cdf4;
-      border-left: 3px solid #3182ce;
-    }
-
-    .menu-item:hover {
-      background: #374151;
-    }
-
-    .cesium-box {
-      flex: 1;
-      height: 100%;
-    }
-
-    .mars3d-container {
-      width: 100%;
-      height: 100%;
-    }
-
-    .panel {
-      width: 350px;
-      background: #2d3748;
-      border-left: 1px solid #4a5568;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .panel-title {
-      padding: 15px 20px;
-      border-bottom: 1px solid #4a5568;
-      color: #90cdf4;
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .panel-content {
-      padding: 20px;
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .query-item {
-      margin-bottom: 20px;
-    }
-
-    .query-label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #e2e8f0;
-    }
-
-    .query-input,
-    .qa-input {
-      width: 100%;
-      height: 40px;
-      padding: 0 10px;
-      background: #374151;
-      border: 1px solid #4a5568;
-      color: white;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-
-    .query-input:focus,
-    .qa-input:focus {
-      outline: none;
-      border-color: #3182ce;
-    }
-
-    .query-btn {
-      width: 100%;
-      height: 35px;
-      background: #3182ce;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-bottom: 15px;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-
-    .query-btn:hover {
-      background: #2b6cb0;
-    }
-
-    .result-box,
-    .qa-result {
-      padding: 10px;
-      background: #374151;
-      border-radius: 4px;
-      min-height: 100px;
-      font-size: 12px;
-      color: #e2e8f0;
-      line-height: 1.6;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #4a5568;
-    }
-
-    .result-box::-webkit-scrollbar,
-    .qa-result::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .result-box::-webkit-scrollbar-thumb {
-      background: #4a5568;
-      border-radius: 3px;
-    }
-
-    .export-btn {
-      width: 100%;
-      height: 35px;
-      background: #22c55e;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-      margin-top: 10px;
-    }
-
-    .export-btn:hover {
-      background: #16a34a;
-    }
-
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 10px;
-      color: #90cdf4;
-      font-size: 12px;
-    }
-
-    .mobile-btn {
-      display: none;
-      border: none;
-      background: transparent;
-      color: #90cdf4;
-      font-size: 22px;
-      padding: 6px 10px;
-      cursor: pointer;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .menu-item,
-    .query-btn,
-    .export-btn,
-    .logout {
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* 移动端遮罩层 */
-    .drawer-mask {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1100;
-      background: rgba(0, 0, 0, 0.5);
-      opacity: 0;
-      transition: opacity 0.28s ease;
-    }
-
-    .drawer-mask.show {
-      opacity: 1;
-    }
-
-    /* select 统一样式 */
-    #travelMode {
-      width: 100%;
-      padding: 8px 10px;
-      margin: 10px 0;
-      background: #374151;
-      border: 1px solid #4a5568;
-      color: white;
-      border-radius: 4px;
-      font-size: 14px;
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2390cdf4' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 30px;
-    }
-
-    #travelMode:focus {
-      outline: none;
-      border-color: #3182ce;
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        height: 56px;
-        padding: 0 12px;
-      }
-
-      .header-title {
-        font-size: 15px;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-right: 8px;
-      }
-
-      .user-info {
-        display: none;
-      }
-
-      /* 侧边栏：用 visibility+opacity+transform 保证动画流畅 */
-      .sidebar {
-        position: fixed;
-        left: 0;
-        top: 56px;
-        z-index: 1200;
-        width: 260px;
-        height: calc(100vh - 56px);
-        background: #2d3748;
-        transform: translateX(-100%);
-        transition: transform 0.28s ease, visibility 0.28s;
-        visibility: hidden;
-        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.45);
-        overflow-y: auto;
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-        visibility: visible;
-      }
-
-      /* 底部面板 */
-      .panel {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1200;
-        max-height: 52vh;
-        height: auto;
-        background: #2d3748;
-        transform: translateY(100%);
-        transition: transform 0.28s ease, visibility 0.28s;
-        visibility: hidden;
-        border-left: none;
-        border-top: 1px solid #4a5568;
-        box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.45);
-        overflow-y: auto;
-        border-radius: 12px 12px 0 0;
-      }
-
-      .panel.open {
-        transform: translateY(0);
-        visibility: visible;
-      }
-
-      .panel-title {
-        position: sticky;
-        top: 0;
-        background: #2d3748;
-        z-index: 1;
-        padding: 12px 16px;
-      }
-
-      .main {
-        display: block;
-        height: calc(100vh - 56px);
-      }
-
-      .cesium-box {
-        position: absolute;
-        left: 0;
-        top: 56px;
-        right: 0;
-        bottom: 0;
-        height: auto;
-        width: 100%;
-      }
-
-      .mars3d-container {
-        width: 100%;
-        height: 100%;
-      }
-
-      .panel-content {
-        padding: 12px 14px;
-      }
-
-      .query-input,
-      .qa-input {
-        height: 44px;
-        font-size: 15px;
-      }
-
-      .query-btn,
-      .export-btn {
-        height: 40px;
-        font-size: 15px;
-      }
-
-      .menu-item {
-        padding: 14px 16px;
-        font-size: 15px;
-      }
-
-      .mobile-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .drawer-mask {
-        display: block;
-      }
-
-      .result-box,
-      .qa-result {
-        max-height: 180px;
-      }
-
-      /* 路径规划按钮竖向排列 */
-      .panel-tab#pathTab .query-item {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .panel-tab#pathTab .query-item .query-btn {
-        margin-bottom: 0;
-      }
-
-      #travelMode {
-        height: 44px;
-        font-size: 15px;
-      }
-    }
-  </style>
+  <link href="./vendor/cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="./vendor/cesium/Cesium.js"></script>
+  <link href="./vendor/mars3d/mars3d.css" rel="stylesheet">
+  <script src="./vendor/mars3d/mars3d.js"></script>
+  <link href="./css/dashboard.css" rel="stylesheet">
 </head>
-
 <body>
-  <!-- 移动端抽屉遮罩 -->
-  <div class="drawer-mask" id="drawerMask"></div>
-
-  <div class="header">
-    <div class="header-title">位你而来——校园数字孪生地图领航者</div>
-    <button id="menuBtn" class="mobile-btn" aria-label="打开菜单">☰</button>
-    <button id="panelBtn" class="mobile-btn" aria-label="打开面板">▤</button>
+  <header class="header">
+    <a class="brand-sign" href="./dashboard.html" aria-label="校园数字孪生地图平台首页">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 40S5 28 5 17a15 15 0 0 1 30 0c0 11-15 23-15 23Z"/><path d="M14 25V11h12v14M18 15h4m-4 5h4m-12 5h20"/></svg></span>
+      <span class="brand-copy"><span class="header-title">校园数字孪生地图平台</span><span class="brand-en">CAMPUS DIGITAL MAP</span></span>
+    </a>
     <div class="user-info">
-      <span id="userName">欢迎您，admin</span>
-      <button class="logout" id="logoutBtn">退出登录</button>
+      <span class="user-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></span>
+      <span id="userName">欢迎您</span>
+      <button class="logout" id="logoutBtn" type="button" aria-label="退出登录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H5v14h4m6-11 4 4-4 4m-6-4h10"/></svg><span>退出登录</span></button>
     </div>
-  </div>
-
-  <div class="main">
-    <div class="sidebar">
-      <div class="menu-item active" data-tab="model">模型浏览</div>
-      <div class="menu-item" data-tab="attr">属性查询</div>
-      <div class="menu-item" data-tab="space">空间查询</div>
-      <div class="menu-item" data-tab="qa">建筑查询</div>
-      <div class="menu-item" data-tab="export">数据导出</div>
-      <div class="menu-item" data-tab="path">路径规划</div>
+  </header>
+  <main class="main" aria-label="校园地图工作台">
+    <div class="cesium-box"><div id="mars3dContainer" class="mars3d-container" aria-label="校园三维地图"></div></div>
+    <nav class="sidebar glass-surface" aria-label="地图功能">
+      <span class="nav-caption" aria-hidden="true">工作台</span>
+      <button type="button" class="menu-item active" data-tab="model" aria-current="page" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg><span>模型浏览</span></button>
+      <button type="button" class="menu-item" data-tab="attr" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11v17M16 10h4v11M2 21h20M9 8h3m-3 4h3m-3 4h3"/></svg><span>属性查询</span></button>
+      <button type="button" class="menu-item" data-tab="space" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5M11 7v8m-4-4h8"/></svg><span>空间查询</span></button>
+      <button type="button" class="menu-item" data-tab="qa" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span>建筑查询</span></button>
+      <button type="button" class="menu-item" data-tab="export" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5"/></svg><span>数据导出</span></button>
+      <button type="button" class="menu-item" data-tab="path" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7.5 5H15a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h7.5"/></svg><span>路径规划</span></button>
+    </nav>
+    <div class="scene-heading glass-surface">
+      <span class="scene-eyebrow">EXPLORE THE CAMPUS</span><h1>校园三维地图</h1>
+      <span id="sceneStatus" class="scene-status" role="status">场景加载中</span>
     </div>
-
-    <div class="cesium-box">
-      <div id="mars3dContainer" class="mars3d-container"></div>
+    <div class="map-actions glass-surface" aria-label="地图辅助工具">
+      <button type="button" id="homeViewBtn" class="map-action" title="校园全景"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5M8 8h8v8H8z"/></svg><span>校园全景</span></button><span class="action-divider" aria-hidden="true"></span>
+      <button type="button" id="helpToggle" class="map-action help-action" aria-label="地图操作帮助" aria-controls="helpTip" aria-expanded="false" title="地图操作帮助"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.3 9a2.8 2.8 0 1 1 4.5 2.2c-1.1.7-1.8 1.1-1.8 2.8m0 3h.01"/></svg></button>
     </div>
-
-    <div class="panel">
-      <div class="panel-tab" id="modelTab">
-        <div class="panel-title">模型浏览</div>
-        <div class="panel-content">
-          <p style="font-size: 12px; color: #94a3b8; margin-bottom: 15px; line-height: 1.6;">
-            鼠标左键拖拽旋转，滚轮缩放，右键平移，点击建筑查看属性。
-          </p>
-          <div class="result-box" id="modelInfo">
-            校园三维模型已加载，可通过鼠标浏览并点击建筑查看信息。
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-tab" id="attrTab" style="display: none;">
-        <div class="panel-title">属性查询</div>
-        <div class="panel-content">
-          <div class="query-item">
-            <label class="query-label">输入建筑名称：</label>
-            <input type="text" class="query-input" id="attrInput" placeholder="如：图书馆、教学楼、体育馆">
-            <button class="query-btn" id="attrBtn">查询属性</button>
-            <div class="loading" id="attrLoading">查询中...</div>
-            <div class="result-box" id="attrResult">
-              输入建筑名称，查询对应属性信息。
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-tab" id="spaceTab" style="display: none;">
-        <div class="panel-title">空间查询</div>
-        <div class="panel-content">
-          <div class="query-item">
-            <label class="query-label">输入查询范围（米）：</label>
-            <input type="text" class="query-input" id="spaceInput" placeholder="如：50（画面中心地面位置周围50米）">
-            <button class="query-btn" id="spaceBtn">空间查询</button>
-            <div class="loading" id="spaceLoading">查询中...</div>
-            <div class="result-box" id="spaceResult">
-              输入半径（米），以画面中心的地面位置为圆心，按地面距离查询附近建筑。
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-tab" id="qaTab" style="display: none;">
-        <div class="panel-title">建筑查询</div>
-        <div class="panel-content">
-          <input type="text" class="qa-input" id="qaInput" placeholder="如：数学楼在哪、教科院在哪">
-          <button class="query-btn" id="qaBtn">查询</button>
-          <div class="loading" id="qaLoading">查询中...</div>
-          <div class="qa-result" id="qaResult">
-            输入建筑或学院名称，系统将在地图中定位。
-          </div>
-        </div>
-      </div>
-
-      <div class="panel-tab" id="pathTab" style="display: none;">
-        <div class="panel-title">最短路径导航</div>
-        <div class="panel-content">
-          <div style="margin-bottom: 10px;">
-            <label style="display:block; font-size: 12px; color: #a0aec0;">起点名称：</label>
-            <input type="text" class="query-input" id="startNode" placeholder="例如：南门">
-          </div>
-          <div style="margin-bottom: 15px;">
-            <label style="display:block; font-size: 12px; color: #a0aec0;">终点名称：</label>
-            <input type="text" class="query-input" id="endNode" placeholder="例如：新图书馆">
-          </div>
-          <div class="query-item">
-            <button class="query-btn" onclick="startPicking('start')">在地图上选起点</button>
-            <button class="query-btn" onclick="startPicking('end')" style="background: #ed8936;">在地图上选终点</button>
-          </div>
-          <select id="travelMode" style="width: 100%; padding: 5px; margin: 10px 0;">
-            <option value="walking">优先步行</option>
-            <option value="ebike">优先电动车</option>
-            <option value="driving">优先驾车</option>
-          </select>
-          <div style="font-size: 12px; color: #a0aec0; margin-bottom: 10px;">优先使用所选方式，必要时组合其他方式；以结果中的分段提示为准。</div>
-          <button class="query-btn" id="planBtn">开始路径规划</button>
-          <button class="query-btn" id="clearPathBtn" style="margin-top: 8px; background: #4a5568;">清除路径</button>
-          <div id="pathInfo" style="margin-top: 15px; font-size: 13px; line-height: 1.6; color: #63b3ed;"></div>
-        </div>
-      </div>
-
-      <div class="panel-tab" id="exportTab" style="display: none;">
-        <div class="panel-title">数据导出</div>
-        <div class="panel-content">
-          <button class="export-btn" id="exportJsonBtn">导出JSON格式</button>
-          <button class="export-btn" id="exportExcelBtn" style="margin-top: 10px;">导出CSV格式</button>
-          <div class="result-box" style="margin-top: 15px;">
-            支持导出校园建筑属性数据，JSON格式供程序调用，CSV格式可直接用Excel等表格软件打开。
-          </div>
-        </div>
-      </div>
+    <div id="helpTip" class="help-tip glass-surface" hidden inert>
+      <div class="help-heading"><strong>探索校园，从这里开始</strong><button type="button" id="helpDismiss" class="icon-button" aria-label="关闭地图操作帮助"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
+      <p>拖动地图调整视角，滚轮缩放，点击建筑查看详细信息。</p><p class="help-mobile">双指缩放或旋转，轻点建筑查看信息。</p><span class="help-footnote">使用左侧功能探索建筑与校园路线</span>
     </div>
-  </div>
-
+    <div id="pickNotice" class="pick-notice glass-surface" role="status" hidden inert>
+      <span class="pick-crosshair" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg></span><span id="pickNoticeText">请在地图上选择位置</span><button type="button" id="cancelPickBtn">取消选点</button>
+    </div>
+    <aside class="panel glass-surface" id="toolPanel" aria-labelledby="panelHeading" hidden inert>
+      <div class="panel-header"><div><p class="panel-eyebrow">CAMPUS WORKSPACE</p><h2 id="panelHeading" tabindex="-1">模型浏览</h2></div><button type="button" id="panelCloseBtn" class="icon-button" aria-label="关闭工具面板"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
+      <div class="panel-scroll">
+        <section class="panel-tab" id="modelTab" hidden inert>
+          <p class="panel-intro">轻点校园建筑，查看它的名称、类别和空间位置。</p>
+          <div class="result-box" id="modelInfo" aria-live="polite"><div class="empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11v17M16 10h4v11M2 21h20M9 8h3m-3 4h3m-3 4h3"/></svg><strong>发现每一栋建筑</strong><p>选择地图中的建筑后，详细信息将在这里显示。</p></div></div>
+        </section>
+        <section class="panel-tab" id="attrTab" hidden inert>
+          <p class="panel-intro">按名称检索校园建筑，查看属性并定位到地图。</p>
+          <div class="query-item"><label class="query-label" for="attrInput">建筑名称</label><input type="text" class="query-input" id="attrInput" placeholder="如：图书馆、教学楼、体育馆" autocomplete="off"><button type="button" class="query-btn" id="attrBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>查询属性</button></div>
+          <div class="loading" id="attrLoading" role="status">正在查找建筑…</div><div class="result-box" id="attrResult" aria-live="polite"><p class="result-placeholder">输入建筑名称，查询对应属性信息。</p></div>
+        </section>
+        <section class="panel-tab" id="spaceTab" hidden inert>
+          <p class="panel-intro">以当前画面中心的地面位置为圆心，查找指定范围内的建筑。</p>
+          <div class="query-item"><label class="query-label" for="spaceInput">查询半径<span class="label-unit">米</span></label><div class="input-with-unit"><input type="text" inputmode="decimal" class="query-input" id="spaceInput" placeholder="如：50" aria-describedby="spaceHint" autocomplete="off"><span aria-hidden="true">m</span></div><p class="field-hint" id="spaceHint">先移动地图，将想查询的位置放在画面中心。</p><button type="button" class="query-btn" id="spaceBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/></svg>查询附近建筑</button></div>
+          <div class="loading" id="spaceLoading" role="status">正在查询范围内的建筑…</div><div class="result-box" id="spaceResult" aria-live="polite"><p class="result-placeholder">输入半径，查看附近的校园建筑。</p></div>
+        </section>
+        <section class="panel-tab" id="qaTab" hidden inert>
+          <p class="panel-intro">输入建筑或学院名称，快速找到它在校园中的位置。</p>
+          <div class="query-item"><label class="query-label" for="qaInput">你想去哪里？</label><input type="text" class="qa-input" id="qaInput" placeholder="如：数学楼在哪、教科院在哪" autocomplete="off"><button type="button" class="query-btn" id="qaBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>查找并定位</button></div>
+          <div class="loading" id="qaLoading" role="status">正在定位建筑…</div><div class="qa-result" id="qaResult" aria-live="polite"><p class="result-placeholder">查询后将在地图中定位。</p></div>
+        </section>
+        <section class="panel-tab" id="pathTab" hidden inert>
+          <p class="panel-intro">从校园的一处，走向另一处。</p>
+          <div class="route-fields">
+            <div class="route-field"><span class="point-marker start-marker" aria-hidden="true"></span><div class="route-field-main"><label class="query-label" for="startNode">起点</label><input type="text" class="query-input" id="startNode" placeholder="如：南门" autocomplete="off"><button type="button" id="pickStartBtn" class="pick-btn" onclick="startPicking('start')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>在地图上选起点</button></div></div>
+            <div class="route-field"><span class="point-marker end-marker" aria-hidden="true"></span><div class="route-field-main"><label class="query-label" for="endNode">终点</label><input type="text" class="query-input" id="endNode" placeholder="如：新图书馆" autocomplete="off"><button type="button" id="pickEndBtn" class="pick-btn" onclick="startPicking('end')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>在地图上选终点</button></div></div>
+          </div>
+          <div class="query-item travel-field"><label class="query-label" for="travelMode">出行偏好</label><select id="travelMode" aria-describedby="travelHint"><option value="walking">优先步行</option><option value="ebike">优先电动车</option><option value="driving">优先驾车</option></select><p class="field-hint" id="travelHint">优先使用所选方式，必要时组合其他方式，以路线结果为准。</p></div>
+          <div class="route-buttons"><button type="button" class="query-btn" id="planBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 16-7-7 16-2-7-7-2Z"/></svg>开始规划</button><button type="button" class="query-btn secondary-btn" id="clearPathBtn">清除路线</button></div><div id="pathInfo" class="path-info" aria-live="polite"></div>
+        </section>
+        <section class="panel-tab" id="exportTab" hidden inert>
+          <p class="panel-intro">导出校园建筑属性数据，供后续整理与分析使用。</p>
+          <div class="export-card"><div class="file-type" aria-hidden="true">JSON</div><div class="export-copy"><h3>结构化数据</h3><p>适合程序调用和数据交换</p></div><button type="button" class="export-btn" id="exportJsonBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5"/></svg>导出 JSON</button></div>
+          <div class="export-card"><div class="file-type" aria-hidden="true">CSV</div><div class="export-copy"><h3>表格数据</h3><p>可用 Excel 等表格软件打开</p></div><button type="button" class="export-btn secondary-btn" id="exportExcelBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5"/></svg>导出 CSV</button></div><p class="field-hint export-note">导出内容为校园建筑属性，不包含三维模型文件。</p>
+        </section>
+      </div>
+    </aside>
+  </main>
   <script src="./routing.js"></script>
   <script src="./js/campus-data.js"></script>
   <script src="./js/queries.js"></script>
@@ -561,5 +98,4 @@
   <script src="./js/ui.js"></script>
   <script src="./script.js"></script>
 </body>
-
 </html>

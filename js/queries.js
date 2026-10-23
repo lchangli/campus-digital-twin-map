@@ -8,10 +8,21 @@
 
   function init({ viewer, featurePoints, aliases, silhouetteBlue }) {
     let lastPickedFeature = null;
+    function featureCard(info, index = null, distance = null) {
+      return `<article class="result-card">
+        <h3>${index === null ? '' : `${index + 1}. `}${escapeHtml(info.name)}</h3>
+        <dl class="detail-grid">
+          <dt>类别</dt><dd>${escapeHtml(info.category || '校舍')}</dd>
+          ${distance === null ? `<dt>经度</dt><dd>${info.lon.toFixed(5)}</dd><dt>纬度</dt><dd>${info.lat.toFixed(5)}</dd>` :
+            `<dt>距中心</dt><dd>${Math.floor(distance)} 米</dd>`}
+        </dl>
+      </article>`;
+    }
+
     function selectBuildingAt(position) {
       if (lastPickedFeature) lastPickedFeature.color = Cesium.Color.WHITE;
       silhouetteBlue.selected = [];
-      document.getElementById('modelInfo').innerHTML = '未选中任何建筑';
+      document.getElementById('modelInfo').textContent = '点击地图中的建筑或名称，查看详细信息。';
 
       const pick = viewer.scene.pick(position);
       let foundName = "";
@@ -28,19 +39,11 @@
       }
 
       if (foundName) {
+        CampusUI.openPanel('model');
         const info = featurePoints.find(p => p.name.trim() === foundName.toString().trim());
 
         if (info) {
-          document.getElementById('modelInfo').innerHTML = `
-                    <div style="color: #ecc94b; font-weight: bold; font-size: 15px; margin-bottom: 8px;">${info.name}</div>
-                    <div style="line-height: 1.8; font-size: 13px;">
-                        <span style="color: #a0aec0;">类别：</span>${info.category || '校舍'}<br>
-                        <span style="color: #a0aec0;">经度：</span>${info.lon.toFixed(5)}<br>
-                        <span style="color: #a0aec0;">纬度：</span>${info.lat.toFixed(5)}<br>
-                        <hr style="border: 0; border-top: 1px solid #4a5568; margin: 8px 0;">
-                        <div style="color: #63b3ed;">已录入校园空间数据库。</div>
-                    </div>
-                `;
+          document.getElementById('modelInfo').innerHTML = featureCard(info);
 
           const targetEntity = viewer.entities.getById(info.name);
           if (targetEntity) {
@@ -50,10 +53,8 @@
             });
           }
         } else {
-          document.getElementById('modelInfo').innerHTML = `
-                    <div style="color: #ecc94b;">识别到：${escapeHtml(foundName)}</div>
-                    <div style="font-size: 12px; color: #718096; margin-top: 5px;">未查询到该建筑的详细属性。</div>
-                `;
+          document.getElementById('modelInfo').innerHTML = `<article class="result-card">
+            <h3>${escapeHtml(foundName)}</h3><p>未查询到该建筑的详细属性。</p></article>`;
         }
       }
     }
@@ -72,13 +73,14 @@
       }
 
       attrLoading.style.display = 'block';
+      attrBtn.disabled = true;
       attrResult.innerHTML = '';
 
       setTimeout(() => {
         const results = featurePoints.filter(item => item.name.includes(keyword));
 
         if (results.length > 0) {
-          let html = `查询结果（共${results.length}条）：<br><br>`;
+          let html = `<p class="result-count">找到 ${results.length} 处建筑</p>`;
 
           const firstMatch = results[0];
           const targetEntity = viewer.entities.getById(firstMatch.name);
@@ -95,19 +97,18 @@
           }
 
           results.forEach((item, index) => {
-            html += `
-                <strong>${index + 1}. ${item.name}</strong><br>
-                类别：${item.category}<br>
-                经度：${item.lon.toFixed(5)}<br>
-                纬度：${item.lat.toFixed(5)}<br><br>
-              `;
+            html += featureCard(item, index);
           });
           attrResult.innerHTML = html;
         } else {
           attrResult.innerHTML = `未查询到"${escapeHtml(keyword)}"的相关信息。`;
         }
         attrLoading.style.display = 'none';
+        attrBtn.disabled = false;
       }, 800);
+    });
+    attrInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.isComposing) attrBtn.click();
     });
 
 
@@ -134,6 +135,7 @@
       }
       const center = ellipsoid.cartesianToCartographic(centerPosition);
       spaceLoading.style.display = 'block';
+      spaceBtn.disabled = true;
 
       const results = featurePoints.flatMap(item => {
         const itemPosition = Cesium.Cartographic.fromDegrees(item.lon, item.lat);
@@ -143,19 +145,21 @@
 
       results.sort((a, b) => a.distance - b.distance);
       setTimeout(() => {
-        let html = `空间查询（${range}米范围内共 ${results.length} 处）：<br><br>`;
+        let html = `<p class="result-count">${range} 米范围内共 ${results.length} 处建筑</p>`;
         if (results.length > 0) {
           results.forEach((item, index) => {
-            html += `${index + 1}. <strong>${item.name}</strong><br>
-                      距中心：${Math.floor(item.distance)}米<br>
-                      类别：${item.category || '未知'}<br><br>`;
+            html += featureCard(item, index, item.distance);
           });
         } else {
           html = `该范围内暂无建筑，请扩大范围或移动视角。`;
         }
         spaceResult.innerHTML = html;
         spaceLoading.style.display = 'none';
+        spaceBtn.disabled = false;
       }, 500);
+    });
+    spaceInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && !event.isComposing) spaceBtn.click();
     });
 
 
@@ -166,9 +170,13 @@
 
     qaBtn.addEventListener('click', () => {
       const question = qaInput.value.trim();
-      if (!question) return;
+      if (!question) {
+        qaResult.textContent = '请输入建筑或学院名称。';
+        return;
+      }
 
       qaLoading.style.display = 'block';
+      qaBtn.disabled = true;
       qaResult.innerHTML = '';
 
       setTimeout(() => {
@@ -205,9 +213,7 @@
           answer = `暂无"${escapeHtml(question)}"的相关位置信息。`;
         }
 
-        qaResult.innerHTML = `<div style="padding: 8px; background: rgba(66, 153, 225, 0.1); border-radius: 4px; border-left: 3px solid #63b3ed;">
-                                ${answer}
-                              </div>`;
+        qaResult.innerHTML = `<div class="result-card">${answer}</div>`;
 
         if (targetEntity) {
           viewer.flyTo(targetEntity, {
@@ -220,12 +226,13 @@
           });
         }
         qaLoading.style.display = 'none';
+        qaBtn.disabled = false;
         qaInput.value = '';
       }, 800);
     });
 
     qaInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') qaBtn.click();
+      if (e.key === 'Enter' && !e.isComposing) qaBtn.click();
     });
 
     return { selectBuildingAt };

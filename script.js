@@ -66,15 +66,20 @@ if (viewer.scene.postProcessStages.get(0)?.name !== 'silhouette') {
   viewer.scene.postProcessStages.add(Cesium.PostProcessStageLibrary.createSilhouetteStage([silhouetteBlue]));
 }
 
-viewer.camera.flyTo({
-  destination: Cesium.Cartesian3.fromDegrees(114.03465, 32.13705, 2500),
-  orientation: {
-    heading: Cesium.Math.toRadians(0),
-    pitch: Cesium.Math.toRadians(-45),
-    roll: 0.0
-  },
-  duration: 3
-});
+// 统一初始与“校园全景”视角，模型异步就绪时不再抢占用户视角。
+function showCampusView() {
+  viewer.camera.cancelFlight();
+  viewer.camera.lookAt(
+    Cesium.Cartesian3.fromDegrees(114.0338, 32.1384, 0),
+    new Cesium.HeadingPitchRange(
+      Cesium.Math.toRadians(-25), Cesium.Math.toRadians(-50),
+      window.innerWidth <= 768 ? 1250 : 1000
+    )
+  );
+  viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  viewer.scene.requestRender();
+}
+showCampusView();
 
 
 const pickGraphicLayer = new mars3d.layer.GraphicLayer({
@@ -126,22 +131,12 @@ const addBuildings = async () => {
     });
     map.addLayer(tiles3dLayer);
 
-    tiles3dLayer.readyPromise.then(() => {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(114.034902, 32.126723, 1500),
-        orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-45),
-          roll: 0.0
-        },
-        duration: 2
-      });
-    });
+    await tiles3dLayer.readyPromise;
   } catch (error) {
     console.error("模型加载失败", error);
+    throw error;
   }
 };
-addBuildings();
 
 async function loadMyTileset() {
   try {
@@ -151,8 +146,6 @@ async function loadMyTileset() {
     });
 
     viewer.scene.primitives.add(tileset);
-    await viewer.zoomTo(tileset);
-
     const heightOffset = -125;
     const cartographic = Cesium.Cartographic.fromCartesian(tileset.boundingSphere.center);
     const surface = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, 0.0);
@@ -163,9 +156,18 @@ async function loadMyTileset() {
     console.log("3DTiles loaded");
   } catch (error) {
     console.error("load tileset error:", error);
+    throw error;
   }
 }
-loadMyTileset();
+Promise.allSettled([addBuildings(), loadMyTileset()]).then(results => {
+  const failed = results.filter(result => result.status === 'rejected').length;
+  const status = document.getElementById('sceneStatus');
+  status.textContent = failed ? '部分模型加载失败' : '三维场景可浏览';
+  status.dataset.state = failed ? 'error' : 'ready';
+  status.classList.toggle('is-ready', !failed);
+  status.classList.toggle('is-error', Boolean(failed));
+  status.title = failed ? '请检查网络连接后刷新页面重试。' : '校园模型已接入，可缩放浏览。';
+});
 
 
 const featurePoints = CampusData.featurePoints;
@@ -386,24 +388,21 @@ function drawMultiModePath(fullPositions, distance, modes, mainMode, rawStart, r
     Cesium.Cartesian3.distance(fullPositions[index], fullPositions[index + 1]) / speedMap[mode], 0);
   const minutes = Math.ceil(seconds / 60);
 
-  const displayColor = modeColors[mainMode].toCssColorString();
   const modeNames = { walking: '步行', ebike: '电动车', driving: '驾车' };
   const modeName = modeNames[mainMode];
   const legend = [...new Set(modes)].map(mode =>
-    `<span style="color:${modeColors[mode].toCssColorString()}; margin-right: 10px;">━ ${modeNames[mode]}</span>`
+    `<span><i style="--route-color:${modeColors[mode].toCssColorString()}"></i>${modeNames[mode]}</span>`
   ).join('');
 
   const pathInfoBox = document.getElementById('pathInfo');
   if (pathInfoBox) {
     pathInfoBox.innerHTML = `
-      <div style="background: ${displayColor}; color: #000; padding: 6px; border-radius: 4px; font-weight: bold; text-align: center; margin-bottom: 10px;">
-        规划完成 · 优先${modeName}
+      <div class="route-summary">规划完成 · 优先${modeName}</div>
+      <div class="route-metrics">
+        <div class="route-metric"><span>总距离</span><strong>${distance.toFixed(0)}<small> 米</small></strong></div>
+        <div class="route-metric"><span>预计用时</span><strong>${minutes}<small> 分钟</small></strong></div>
       </div>
-      <div style="padding: 5px; border: 1px dashed ${displayColor}; border-radius: 4px;">
-        <span style="color: #a0aec0;">总距离：</span><b style="color: #fff; font-size: 15px;">${distance.toFixed(0)}</b> 米<br>
-        <span style="color: #a0aec0;">预计用时：</span><b style="color: #fff; font-size: 15px;">约 ${minutes}</b> 分钟
-      </div>
-      <div style="margin-top: 8px; font-size: 12px;">路段图例：${legend}</div>
+      <div class="route-legend" aria-label="路段交通方式">${legend}</div>
     `;
   }
 
@@ -417,7 +416,7 @@ function drawMultiModePath(fullPositions, distance, modes, mainMode, rawStart, r
 
 function startPicking(type) {
   pickMode = type;
-  CampusUI.showToast(type === 'start' ? "请在地图上点击选择【起点】" : "请在地图上点击选择【终点】");
+  CampusUI.setPickMode(type);
 }
 
 
@@ -463,17 +462,20 @@ function pickPathPoint(cartesian) {
     pickGraphicLayer.addGraphic(endMarker);
     pickMode = null;
   }
+  CampusUI.setPickMode(pickMode);
 }
 
  // 手动改写名称后，取消此前地图选点，避免输入内容被旧坐标覆盖。
 document.getElementById('startNode').addEventListener('input', function () {
   pickMode = null;
+  CampusUI.setPickMode(null);
   startPoint = null;
   if (startMarker) pickGraphicLayer.removeGraphic(startMarker);
   startMarker = null;
 });
 document.getElementById('endNode').addEventListener('input', function () {
   pickMode = null;
+  CampusUI.setPickMode(null);
   endPoint = null;
   if (endMarker) pickGraphicLayer.removeGraphic(endMarker);
   endMarker = null;
@@ -531,7 +533,7 @@ document.getElementById('planBtn').onclick = function () {
       const infoDiv = document.getElementById('pathInfo');
       if (infoDiv) {
         const description = uniqueModes.length > 1 ? `[${modeDesc}] 混合路径` : `${modeDesc}路径`;
-        infoDiv.innerHTML += `<div style="color:#ecc94b; font-size:12px; margin-top:5px;">实际采用${description}，请按各路段方式通行。</div>`;
+        infoDiv.innerHTML += `<p class="route-note">实际采用${description}，请按各路段方式通行。</p>`;
       }
     }
   } else {
@@ -549,6 +551,7 @@ document.getElementById('clearPathBtn').onclick = function () {
   startMarker = null;
   endMarker = null;
   pickMode = null;
+  CampusUI.setPickMode(null);
 
   document.getElementById('startNode').value = "";
   document.getElementById('endNode').value = "";
@@ -571,4 +574,5 @@ viewer.screenSpaceEventHandler.setInputAction(event => {
   queries.selectBuildingAt(event.position);
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 CampusExports.init({ featurePoints });
-CampusUI.init({ viewer, getBuildingLayer: () => tiles3dLayer });
+CampusUI.init({ viewer, getBuildingLayer: () => tiles3dLayer, cancelPicking: () => { pickMode = null; } });
+document.getElementById('homeViewBtn').addEventListener('click', showCampusView);
