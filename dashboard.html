@@ -492,11 +492,11 @@
         <div class="panel-content">
           <div class="query-item">
             <label class="query-label">输入查询范围（米）：</label>
-            <input type="text" class="query-input" id="spaceInput" placeholder="如：50（查询当前视角50米范围内的建筑）">
+            <input type="text" class="query-input" id="spaceInput" placeholder="如：50（画面中心地面位置周围50米）">
             <button class="query-btn" id="spaceBtn">空间查询</button>
             <div class="loading" id="spaceLoading">查询中...</div>
             <div class="result-box" id="spaceResult">
-              输入范围半径，查询当前视角附近的建筑。
+              输入半径（米），以画面中心的地面位置为圆心，按地面距离查询附近建筑。
             </div>
           </div>
         </div>
@@ -545,9 +545,9 @@
         <div class="panel-title">数据导出</div>
         <div class="panel-content">
           <button class="export-btn" id="exportJsonBtn">导出JSON格式</button>
-          <button class="export-btn" id="exportExcelBtn" style="margin-top: 10px;">导出Excel格式</button>
+          <button class="export-btn" id="exportExcelBtn" style="margin-top: 10px;">导出CSV格式</button>
           <div class="result-box" style="margin-top: 15px;">
-            支持导出校园建筑属性数据，JSON格式供程序调用，Excel(CSV)格式可直接用表格软件打开。
+            支持导出校园建筑属性数据，JSON格式供程序调用，CSV格式可直接用Excel等表格软件打开。
           </div>
         </div>
       </div>
@@ -555,6 +555,10 @@
   </div>
 
   <script src="./routing.js"></script>
+  <script src="./js/campus-data.js"></script>
+  <script src="./js/queries.js"></script>
+  <script src="./js/exports.js"></script>
+  <script src="./js/ui.js"></script>
   <script src="./script.js"></script>
 </body>
 
