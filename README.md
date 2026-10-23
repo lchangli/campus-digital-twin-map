@@ -1,4 +1,4 @@
-# 位你而来——校园数字孪生地图领航者
+# 校园数字孪生地图平台
 
 [![Tests](https://github.com/lchangli/campus-digital-twin-map/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/lchangli/campus-digital-twin-map/actions/workflows/tests.yml)
 
