@@ -10,6 +10,10 @@
 
 ## 界面预览
 
+登录页面：
+
+![校园数字孪生地图平台登录页面](docs/screenshots/login-desktop.png)
+
 校园核心区域的建筑白模与倾斜摄影：
 
 ![校园核心区域三维模型近景](docs/screenshots/campus-closeup.png)
