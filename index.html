@@ -258,7 +258,7 @@
 
     <footer class="site-footer">
       <p class="demo-note">前端演示系统 · 登录状态仅保存在当前浏览器</p>
-      <p class="footer-links"><span>基于</span><a href="https://mars3d.cn/" target="_blank" rel="noopener noreferrer">Mars3D</a><span class="footer-divider" aria-hidden="true">/</span><a href="https://cesium.com/" target="_blank" rel="noopener noreferrer">Cesium</a><span class="footer-divider" aria-hidden="true">·</span><a href="https://github.com/lchangli/campus-digital-twin-map" target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></p>
+      <p class="footer-links"><span>基于</span><a href="https://cesium.com/platform/cesiumjs/" target="_blank" rel="noopener noreferrer">CesiumJS</a><span class="footer-divider" aria-hidden="true">·</span><a href="https://github.com/lchangli/campus-digital-twin-map" target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></p>
     </footer>
   </main>
 
@@ -333,7 +333,7 @@
       setTimeout(() => {
         localStorage.setItem('isLogin', 'true');
         localStorage.setItem('username', authenticatedUsername);
-        window.location.href = 'dashboard.html';
+        window.location.href = 'dashboard.html?v=cesium-1.145.0';
       }, 160);
     });
 

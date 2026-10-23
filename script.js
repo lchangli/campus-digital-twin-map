@@ -18,45 +18,40 @@ let roadData = {
 
 // 本项目使用本地模型和第三方底图，不在源码中保存个人 Cesium ion token。
 
-const map = new mars3d.Map("mars3dContainer", {
-  scene: {
-    center: { lat: 32.137, lng: 114.035, alt: 2500, heading: 0, pitch: -45 }
-  },
-  control: {
-    geocoder: false,
-    baseLayerPicker: false
-  },
-  terrain: {
-    show: false
-  },
-  basemaps: [
-    {
-      name: "腾讯深蓝 (推荐)",
-      type: "tencent",
-      layer: "custom",
-      style: 4,
-      show: true
-    },
-    {
-      name: "高德月光银",
-      type: "gaode",
-      layer: "vec",
-      style: "light",
-      show: false
-    }
-  ]
+const viewer = new Cesium.Viewer("cesiumContainer", {
+  baseLayer: false,
+  terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+  geocoder: false,
+  baseLayerPicker: false,
+  animation: false,
+  timeline: false,
+  homeButton: false,
+  navigationHelpButton: false,
+  sceneModePicker: false,
+  fullscreenButton: false,
+  vrButton: false,
+  infoBox: false,
+  selectionIndicator: false
 });
 
-const viewer = map.viewer;
+// 腾讯瓦片的纵坐标从南向北编号，因此保留原底图的 reverseY。
+viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+  url: "https://rt{s}.map.gtimg.com/tile?z={z}&x={x}&y={reverseY}&styleid=4&scene=0",
+  subdomains: ["0", "1", "2"],
+  maximumLevel: 18,
+  credit: new Cesium.Credit("腾讯地图", true)
+}));
 
-map.clock.currentTime = Cesium.JulianDate.fromDate(new Date("2022-11-01 12:00:00"));
-map.scene.light = new Cesium.DirectionalLight({
-  direction: map.scene.camera.direction
+viewer.clock.currentTime = Cesium.JulianDate.fromDate(new Date("2022-11-01T12:00:00"));
+viewer.scene.light = new Cesium.DirectionalLight({
+  direction: Cesium.Cartesian3.clone(viewer.camera.direction)
 });
-map.camera.percentageChanged = 0.001;
-map.on(mars3d.EventType.cameraChanged, function (event) {
-  map.scene.light.direction = map.scene.camera.direction;
+viewer.camera.percentageChanged = 0.001;
+viewer.camera.changed.addEventListener(() => {
+  viewer.scene.light.direction = Cesium.Cartesian3.clone(viewer.camera.direction);
 });
+// 建筑点击和路径选点由下方唯一入口处理，不使用默认的双击追踪。
+viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
 const silhouetteBlue = Cesium.PostProcessStageLibrary.createEdgeDetectionStage();
 silhouetteBlue.uniforms.color = Cesium.Color.YELLOW;
@@ -82,40 +77,29 @@ function showCampusView() {
 showCampusView();
 
 
-const pickGraphicLayer = new mars3d.layer.GraphicLayer({
-  name: "选点标记图层",
-  zIndex: 1000
-});
-map.addLayer(pickGraphicLayer);
+// 选点单独存放，清除它们不会影响兴趣点、查询或路线实体。
+const pickDataSource = new Cesium.CustomDataSource("选点标记图层");
+viewer.dataSources.add(pickDataSource).catch(error => console.error("选点图层加载失败", error));
+const pickMarkers = pickDataSource.entities;
 
-function addRoadLayer(geojson) {
-  const roadLayer = new mars3d.layer.GeoJsonLayer({
-    name: "校园道路",
-    data: geojson,
-    symbol: {
-      styleOptions: {
-        width: 3,
-        material: Cesium.Color.fromCssColorString('#FFD700').withAlpha(0.8),
-        clampToGround: true,
-        classificationType: Cesium.ClassificationType.TERRAIN
-      }
-    },
-    popup: "名称：{name}"
+async function addRoadLayer(geojson) {
+  // 复用构建路网时取得的 GeoJSON，不重复发起数据请求。
+  const roadLayer = await Cesium.GeoJsonDataSource.load(geojson, {
+    stroke: Cesium.Color.fromCssColorString('#FFD700').withAlpha(0.8),
+    strokeWidth: 3,
+    clampToGround: true
   });
-  map.addLayer(roadLayer);
+  roadLayer.name = "校园道路";
+  roadLayer.entities.values.forEach(entity => {
+    if (entity.polyline) entity.polyline.classificationType = Cesium.ClassificationType.TERRAIN;
+  });
+  await viewer.dataSources.add(roadLayer);
 }
 
 const addBuildings = async () => {
   try {
-    tiles3dLayer = new mars3d.layer.TilesetLayer({
-      name: "校园建筑白模",
-      url: "./model/tileset.json",
-      maximumScreenSpaceError: 1,
-      popup: [
-        { field: "name", name: "名称" },
-        { field: "height", name: "高度", unit: "米" }
-      ],
-      marsJzwStyle: false,
+    tiles3dLayer = await Cesium.Cesium3DTileset.fromUrl("./model/tileset.json", {
+      maximumScreenSpaceError: window.innerWidth <= 768 ? 8 : 1,
       customShader: new Cesium.CustomShader({
         lightingModel: Cesium.LightingModel.PBR,
         fragmentShaderText: `
@@ -129,9 +113,7 @@ const addBuildings = async () => {
             } `
       })
     });
-    map.addLayer(tiles3dLayer);
-
-    await tiles3dLayer.readyPromise;
+    viewer.scene.primitives.add(tiles3dLayer);
   } catch (error) {
     console.error("模型加载失败", error);
     throw error;
@@ -223,7 +205,7 @@ fetch("./road/road.geojson")
       roadData.walking[node] || roadData.ebike[node] || roadData.driving[node]
     );
     if (roadNodes.length === 0) throw new Error('路网中没有可通行路段');
-    addRoadLayer(geojson);
+    return addRoadLayer(geojson);
   })
   .catch(error => {
     roadNodes = [];
@@ -420,46 +402,70 @@ function startPicking(type) {
 }
 
 
+function getMapPosition(screenPosition) {
+  const scene = viewer.scene;
+  // 点击模型时优先取深度位置；空白地面使用射线与地球相交的位置。
+  // 朝向天空的射线不会命中地球，保持选点状态等待下一次有效点击。
+  if (scene.pickPositionSupported && Cesium.defined(scene.pick(screenPosition))) {
+    const position = scene.pickPosition(screenPosition);
+    if (Cesium.defined(position)) return position;
+  }
+  const ray = viewer.camera.getPickRay(screenPosition);
+  if (Cesium.defined(ray)) {
+    const position = scene.globe.pick(ray, scene);
+    if (Cesium.defined(position)) return position;
+  }
+  return viewer.camera.pickEllipsoid(screenPosition, scene.globe.ellipsoid);
+}
+
+
+function addPickMarker(position, text, cssColor) {
+  const color = Cesium.Color.fromCssColorString(cssColor);
+  return pickMarkers.add({
+    name: text,
+    position,
+    point: {
+      color,
+      pixelSize: 12,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 2,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    },
+    label: {
+      text,
+      font: '14px Microsoft YaHei',
+      fillColor: Cesium.Color.WHITE,
+      showBackground: true,
+      backgroundColor: color,
+      backgroundPadding: new Cesium.Cartesian2(7, 4),
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -20),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    }
+  });
+}
+
+
 function pickPathPoint(cartesian) {
   if (!cartesian) return;
 
-  const point = mars3d.LngLatPoint.fromCartesian(cartesian);
-  const displayCoords = `${point.lng.toFixed(6)}, ${point.lat.toFixed(6)}`;
+  const point = Cesium.Cartographic.fromCartesian(cartesian);
+  const displayCoords = `${Cesium.Math.toDegrees(point.longitude).toFixed(6)}, ${Cesium.Math.toDegrees(point.latitude).toFixed(6)}`;
 
   if (pickMode === 'start') {
     startPoint = cartesian;
     document.getElementById('startNode').value = "已选起点: " + displayCoords;
 
-    if (startMarker) pickGraphicLayer.removeGraphic(startMarker);
-    startMarker = new mars3d.graphic.PointEntity({
-      position: cartesian,
-      style: {
-        color: "#22c55e",
-        pixelSize: 12,
-        outlineColor: "#ffffff",
-        outlineWidth: 2,
-        label: { text: "起点", font_size: 14, pixelOffsetY: -20, background: true, backgroundColor: "#22c55e" }
-      }
-    });
-    pickGraphicLayer.addGraphic(startMarker);
+    if (startMarker) pickMarkers.remove(startMarker);
+    startMarker = addPickMarker(cartesian, "起点", "#22c55e");
     pickMode = 'end';
 
   } else if (pickMode === 'end') {
     endPoint = cartesian;
     document.getElementById('endNode').value = "已选终点: " + displayCoords;
 
-    if (endMarker) pickGraphicLayer.removeGraphic(endMarker);
-    endMarker = new mars3d.graphic.PointEntity({
-      position: cartesian,
-      style: {
-        color: "#ef4444",
-        pixelSize: 12,
-        outlineColor: "#ffffff",
-        outlineWidth: 2,
-        label: { text: "终点", font_size: 14, pixelOffsetY: -20, background: true, backgroundColor: "#ef4444" }
-      }
-    });
-    pickGraphicLayer.addGraphic(endMarker);
+    if (endMarker) pickMarkers.remove(endMarker);
+    endMarker = addPickMarker(cartesian, "终点", "#ef4444");
     pickMode = null;
   }
   CampusUI.setPickMode(pickMode);
@@ -470,14 +476,14 @@ document.getElementById('startNode').addEventListener('input', function () {
   pickMode = null;
   CampusUI.setPickMode(null);
   startPoint = null;
-  if (startMarker) pickGraphicLayer.removeGraphic(startMarker);
+  if (startMarker) pickMarkers.remove(startMarker);
   startMarker = null;
 });
 document.getElementById('endNode').addEventListener('input', function () {
   pickMode = null;
   CampusUI.setPickMode(null);
   endPoint = null;
-  if (endMarker) pickGraphicLayer.removeGraphic(endMarker);
+  if (endMarker) pickMarkers.remove(endMarker);
   endMarker = null;
 });
 
@@ -545,7 +551,7 @@ document.getElementById('planBtn').onclick = function () {
 document.getElementById('clearPathBtn').onclick = function () {
   clearPlannedPath();
 
-  pickGraphicLayer.clear();
+  pickMarkers.removeAll();
   startPoint = null;
   endPoint = null;
   startMarker = null;
@@ -568,7 +574,7 @@ const queries = CampusQueries.init({
 // 应用只有一个左键入口：选点消费整次点击，不再触发建筑定位。
 viewer.screenSpaceEventHandler.setInputAction(event => {
   if (pickMode) {
-    pickPathPoint(map.getCurrentMousePosition(event.position));
+    pickPathPoint(getMapPosition(event.position));
     return;
   }
   queries.selectBuildingAt(event.position);

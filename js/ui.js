@@ -5,7 +5,7 @@
   function initSession() {
     if (!localStorage.getItem('isLogin')) {
       alert('请先登录系统！');
-      window.location.href = 'index.html';
+      window.location.href = 'index.html?v=cesium-1.145.0';
     }
     document.getElementById('userName').textContent = `欢迎您，${localStorage.getItem('username') || 'admin'}`;
   }
@@ -182,14 +182,14 @@
       if (confirm('确定要退出登录吗？')) {
         localStorage.removeItem('isLogin');
         localStorage.removeItem('username');
-        window.location.href = 'index.html';
+        window.location.href = 'index.html?v=cesium-1.145.0';
       }
     });
 
     function applyMobileCesiumTweaks() {
-      const tiles3dLayer = getBuildingLayer();
-      if (tiles3dLayer && tiles3dLayer.maximumScreenSpaceError !== undefined) {
-        tiles3dLayer.maximumScreenSpaceError = 8;
+      const tileset = getBuildingLayer();
+      if (tileset && tileset.maximumScreenSpaceError !== undefined) {
+        tileset.maximumScreenSpaceError = 8;
       }
       const cameraControl = viewer?.scene?.screenSpaceCameraController;
       if (cameraControl) {

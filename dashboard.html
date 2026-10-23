@@ -7,16 +7,14 @@
   <meta name="description" content="浏览校园三维建筑、查询空间信息，规划校园出行路线。">
   <title>校园数字孪生地图平台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 44'%3E%3Cpath fill='%230f1623' d='M0 0h40v44H0z'/%3E%3Cpath d='M20 40S5 28 5 17a15 15 0 0 1 30 0c0 11-15 23-15 23Z' fill='none' stroke='%2363b3ed' stroke-width='2'/%3E%3Cpath d='M14 25V11h12v14M18 15h4m-4 5h4m-12 5h20' fill='none' stroke='%2363b3ed' stroke-width='2'/%3E%3C/svg%3E">
-  <script>window.CESIUM_BASE_URL = "./vendor/cesium/";</script>
-  <link href="./vendor/cesium/Widgets/widgets.css" rel="stylesheet">
-  <script src="./vendor/cesium/Cesium.js"></script>
-  <link href="./vendor/mars3d/mars3d.css" rel="stylesheet">
-  <script src="./vendor/mars3d/mars3d.js"></script>
-  <link href="./css/dashboard.css" rel="stylesheet">
+  <script>window.CESIUM_BASE_URL = "./vendor/cesium-1.145.0/";</script>
+  <link href="./vendor/cesium-1.145.0/Widgets/widgets.css" rel="stylesheet">
+  <script src="./vendor/cesium-1.145.0/Cesium.js"></script>
+  <link href="./css/dashboard.css?v=cesium-1.145.0" rel="stylesheet">
 </head>
 <body>
   <header class="header">
-    <a class="brand-sign" href="./dashboard.html" aria-label="校园数字孪生地图平台首页">
+    <a class="brand-sign" href="./dashboard.html?v=cesium-1.145.0" aria-label="校园数字孪生地图平台首页">
       <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 40S5 28 5 17a15 15 0 0 1 30 0c0 11-15 23-15 23Z"/><path d="M14 25V11h12v14M18 15h4m-4 5h4m-12 5h20"/></svg></span>
       <span class="brand-copy"><span class="header-title">校园数字孪生地图平台</span><span class="brand-en">CAMPUS DIGITAL MAP</span></span>
     </a>
@@ -27,7 +25,7 @@
     </div>
   </header>
   <main class="main" aria-label="校园地图工作台">
-    <div class="cesium-box"><div id="mars3dContainer" class="mars3d-container" aria-label="校园三维地图"></div></div>
+    <div class="cesium-box"><div id="cesiumContainer" class="cesium-container" aria-label="校园三维地图"></div></div>
     <nav class="sidebar glass-surface" aria-label="地图功能">
       <span class="nav-caption" aria-hidden="true">工作台</span>
       <button type="button" class="menu-item active" data-tab="model" aria-current="page" aria-controls="toolPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg><span>模型浏览</span></button>
@@ -95,7 +93,7 @@
   <script src="./js/campus-data.js"></script>
   <script src="./js/queries.js"></script>
   <script src="./js/exports.js"></script>
-  <script src="./js/ui.js"></script>
-  <script src="./script.js"></script>
+  <script src="./js/ui.js?v=cesium-1.145.0"></script>
+  <script src="./script.js?v=cesium-1.145.0"></script>
 </body>
 </html>

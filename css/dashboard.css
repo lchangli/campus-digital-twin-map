@@ -47,7 +47,8 @@ p, h1, h2, h3 { margin: 0; }
 .logout:hover { background: #26394f; border-color: #6487ab; }
 
 .main { position: relative; isolation: isolate; width: 100%; height: calc(100% - var(--header-height)); }
-.cesium-box, .mars3d-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cesium-box, .cesium-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cesium-container .cesium-widget, .cesium-container .cesium-widget canvas { width: 100%; height: 100%; }
 .sidebar { position: absolute; z-index: 12; top: var(--edge); left: var(--edge); display: flex; flex-direction: column; width: var(--nav-width); max-height: calc(100% - 68px); padding: 9px 7px; border-radius: 16px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #425974 transparent; }
 .nav-caption { display: block; text-align: center; padding: 3px 0 9px; color: #839db9; font-size: 10px; letter-spacing: .15em; }
 .menu-item { position: relative; width: 100%; min-height: 68px; padding: 9px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; flex-shrink: 0; color: #adc0d7; background: transparent; border: 1px solid transparent; border-radius: 10px; font-size: 11px; line-height: 1.6; white-space: nowrap; transition: color .16s, background .16s, border-color .16s; }
@@ -164,12 +165,12 @@ p, h1, h2, h3 { margin: 0; }
 .export-note { padding: 1px 2px; }
 
 /* Keep the map provider credits readable and outside the floating workspace. */
-.mars3d-container .cesium-viewer-bottom { display: block !important; max-width: calc(100% - 20px); }
-.mars3d-container .cesium-widget-credits { display: inline-block; padding: 2px 5px; border-radius: 4px; background: rgba(15, 22, 35, .7); font-size: 10px; }
-.mars3d-container .cesium-viewer-toolbar { top: 76px; right: 17px; }
-.panel-open .mars3d-container .cesium-viewer-toolbar { right: calc(var(--panel-width) + 28px); }
-.mars3d-container .cesium-infoBox { top: 130px; right: 16px; max-width: min(480px, calc(100% - 140px)); }
-.panel-open .mars3d-container .cesium-infoBox { right: calc(var(--panel-width) + 28px); }
+.cesium-container .cesium-viewer-bottom { max-width: calc(100% - 20px); }
+.cesium-container .cesium-widget-credits { display: inline-block; padding: 2px 5px; border-radius: 4px; background: rgba(15, 22, 35, .7); font-size: 10px; }
+.cesium-container .cesium-viewer-toolbar { top: 76px; right: 17px; }
+.panel-open .cesium-container .cesium-viewer-toolbar { right: calc(var(--panel-width) + 28px); }
+.cesium-container .cesium-infoBox { top: 130px; right: 16px; max-width: min(480px, calc(100% - 140px)); }
+.panel-open .cesium-container .cesium-infoBox { right: calc(var(--panel-width) + 28px); }
 
 @media (min-width: 769px) and (max-width: 1099px) {
   :root { --edge: 12px; --nav-width: 78px; --panel-width: 320px; }
@@ -249,10 +250,9 @@ p, h1, h2, h3 { margin: 0; }
   #pickNoticeText { max-width: 155px; }
   .pick-notice button { min-height: 36px; font-size: 11px; }
   .app-toast { bottom: calc(var(--mobile-nav-height) + 25px); max-width: calc(100% - 24px); font-size: 12px; }
-  .mars3d-container .cesium-viewer-bottom { bottom: calc(var(--mobile-nav-height) + 3px) !important; }
-  .mars3d-container .cesium-viewer-toolbar, .panel-open .mars3d-container .cesium-viewer-toolbar { right: 12px; top: 77px; }
-  .mars3d-container .cesium-infoBox, .panel-open .mars3d-container .cesium-infoBox { right: 12px; top: 113px; max-width: calc(100% - 24px); }
-  .mars3d-container .mars3d-locationbar { bottom: calc(var(--mobile-nav-height) + 3px); }
+  .cesium-container .cesium-viewer-bottom { bottom: calc(var(--mobile-nav-height) + 3px) !important; }
+  .cesium-container .cesium-viewer-toolbar, .panel-open .cesium-container .cesium-viewer-toolbar { right: 12px; top: 77px; }
+  .cesium-container .cesium-infoBox, .panel-open .cesium-container .cesium-infoBox { right: 12px; top: 113px; max-width: calc(100% - 24px); }
 }
 @media (max-width: 768px) and (max-height: 500px) {
   :root { --header-height: calc(44px + env(safe-area-inset-top, 0px)); --mobile-nav-height: calc(54px + env(safe-area-inset-bottom, 0px)); }

@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/lchangli/campus-digital-twin-map/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/lchangli/campus-digital-twin-map/actions/workflows/tests.yml)
 
-基于 Mars3D 和 Cesium 的校园三维地图演示项目。网站由 HTML、CSS 和 JavaScript 组成，通过相对路径加载校园道路、建筑白模与倾斜摄影数据，可在静态网页托管服务运行，无须后端应用或数据库。
+基于官方 CesiumJS 的校园三维地图演示项目。网站由 HTML、CSS 和 JavaScript 组成，通过相对路径加载校园道路、建筑白模与倾斜摄影数据，可在静态网页托管服务运行，无须后端应用或数据库。
 
 在线演示：[进入校园地图](https://lchangli.github.io/campus-digital-twin-map/)
 
@@ -43,7 +43,7 @@
 
 - HTML / CSS / 原生 JavaScript
 - 路径搜索：Dijkstra + 二叉最小堆，按通行方式权重选择路线
-- Mars3D 3.11.8 / mars3d-cesium 1.145.0：三维地图与模型渲染，运行文件随站点保存于 `vendor/`
+- 官方 CesiumJS 1.145.0：三维地图与模型渲染，运行文件随站点保存于 `vendor/cesium-1.145.0/`
 - GeoJSON：道路数据
 - 3D Tiles / GLB：三维模型数据
 
@@ -65,7 +65,7 @@
 ├── road/            # road.geojson 校园道路
 ├── model/           # 建筑白模 tileset.json 与 GLB 等模型文件
 ├── Data/            # 倾斜摄影 tileset.json 与分块模型文件
-├── vendor/          # 固定版本的 Mars3D / Cesium 运行文件
+├── vendor/          # 固定版本的官方 CesiumJS 运行文件与许可说明
 ├── .nojekyll        # 让 GitHub Pages 直接提供静态文件
 ├── LICENSE          # 项目代码、文档和数据的 MIT 许可证
 └── README.md
@@ -123,12 +123,12 @@ node --test
 
 本项目的代码、文档、截图及仓库内的校园路网和三维模型数据（包括 `road/`、`model/`、`Data/`）统一采用 [MIT License](LICENSE)，允许使用、复制、修改、分发和商业使用，需保留版权与许可声明。
 
-`vendor/` 中的 Mars3D、Cesium 及其第三方组件继续遵循各自的原始许可证，详见 [第三方运行依赖说明](vendor/THIRD_PARTY_NOTICES.md)。在线底图等外部服务不属于本仓库的 MIT 授权内容。
+`vendor/` 中的官方 CesiumJS 及其第三方组件继续遵循各自的原始许可证，详见 [第三方运行依赖说明](vendor/THIRD_PARTY_NOTICES.md)。保留 Cesium 和底图服务要求的署名。在线底图等外部服务不属于本仓库的 MIT 授权内容。
 
 ## 运行条件与说明
 
 - 浏览器需支持 WebGL；三维模型的首次加载时间取决于网络和设备性能。
-- Mars3D / Cesium 的运行文件随站点一起提供，不从 CDN 自动更新。腾讯、高德底图仍依赖第三方网络服务，服务不可用时会影响底图展示。
+- 官方 CesiumJS 的运行文件随站点一起提供，不从 CDN 自动更新。腾讯深蓝底图依赖第三方网络服务，服务不可用时会影响底图展示。
 - 第三方运行库的版本、来源和许可文件见 [vendor/THIRD_PARTY_NOTICES.md](vendor/THIRD_PARTY_NOTICES.md)。
 - 源码不保存个人 Cesium ion token；目前的本地模型与第三方底图不使用个人 ion 资源。
 - 地物目录中的理科楼、理科楼南楼和理科北楼目前共用坐标，需依据可靠数据进一步核实；演示路线不应作为实地精确导航依据。
