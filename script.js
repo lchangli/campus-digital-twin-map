@@ -15,6 +15,7 @@ let lastPickedFeature = null;
 let selectedBuildingName = null;
 let tiles3dLayer;
 let roadNodes = [];
+let roadLoadError = null;
 let activePathPolyline = null;
 let roadData = {
   walking: {},
@@ -90,20 +91,22 @@ const pickGraphicLayer = new mars3d.layer.GraphicLayer({
 });
 map.addLayer(pickGraphicLayer);
 
-const roadLayer = new mars3d.layer.GeoJsonLayer({
-  name: "校园道路",
-  url: "./road/road.geojson",
-  symbol: {
-    styleOptions: {
-      width: 3,
-      material: Cesium.Color.fromCssColorString('#FFD700').withAlpha(0.8),
-      clampToGround: true,
-      classificationType: Cesium.ClassificationType.TERRAIN
-    }
-  },
-  popup: "名称：{name}"
-});
-map.addLayer(roadLayer);
+function addRoadLayer(geojson) {
+  const roadLayer = new mars3d.layer.GeoJsonLayer({
+    name: "校园道路",
+    data: geojson,
+    symbol: {
+      styleOptions: {
+        width: 3,
+        material: Cesium.Color.fromCssColorString('#FFD700').withAlpha(0.8),
+        clampToGround: true,
+        classificationType: Cesium.ClassificationType.TERRAIN
+      }
+    },
+    popup: "名称：{name}"
+  });
+  map.addLayer(roadLayer);
+}
 
 const addBuildings = async () => {
   try {
@@ -176,7 +179,7 @@ loadMyTileset();
 const featurePoints = [
   { lon: 114.032215, lat: 32.134658, name: '理科楼', category: '教学楼' },
   { lon: 114.032215, lat: 32.134658, name: '理科楼南楼', category: '教学楼' },
-  { lon: 114.032215, lat: 32.134658, name: '理科北楼楼', category: '教学楼' },
+  { lon: 114.032215, lat: 32.134658, name: '理科北楼', category: '教学楼' },
   { lon: 114.033502, lat: 32.134015, name: '教2', category: '教学楼' },
   { lon: 114.033980, lat: 32.134085, name: '科技馆', category: '教学楼' },
   { lon: 114.033095, lat: 32.134045, name: '教3', category: '教学楼' },
@@ -271,103 +274,11 @@ const featurePoints = [
   { lon: 114.035236, lat: 32.145726, name: '信院7号楼', category: '宿舍' },
 ];
 
-const roadNetwork = {
-  "南门": ["明德广场", "理科楼", "南湖酒店"],
-  "明德广场": ["南门", "行政办公室", "一舍", "二舍"],
-  "南湖酒店": ["南门", "化学楼", "校医院"],
-
-  "理科楼": ["南门", "教2", "化学楼"],
-  "教2": ["理科楼", "教3", "教4"],
-  "教3": ["教2", "科技馆", "图书馆（旧）"],
-  "科技馆": ["教3", "行政办公室"],
-  "行政办公室": ["明德广场", "科技馆", "校医院"],
-  "化学楼": ["理科楼", "教7", "南湖酒店"],
-  "教4": ["教2", "教7", "教6"],
-  "教7": ["教4", "教6", "化学楼"],
-  "教6": ["教4", "教7", "教8"],
-  "教8": ["教6", "社科楼", "人文楼", "心语广场"],
-
-  "校医院": ["行政办公室", "南湖酒店", "海苑餐厅"],
-  "图书馆（旧）": ["教3", "人文楼", "文心亭"],
-  "人文楼": ["图书馆（旧）", "社科楼", "教8"],
-  "社科楼": ["人文楼", "教8", "逸夫楼"],
-  "逸夫楼": ["社科楼", "教8", "浉源餐厅", "1号楼"],
-  "文心亭": ["图书馆（旧）", "半亩塘", "一棵树广场"],
-
-  "西门": ["体育馆", "琴房"],
-  "体育馆": ["西门", "青年广场", "西操场"],
-  "西操场": ["体育馆", "琴房", "半亩塘"],
-  "琴房": ["西门", "西操场"],
-  "青年广场": ["体育馆", "一棵树广场", "半亩塘"],
-
-  "图书馆（新）": ["一棵树广场", "经管楼", "教科楼", "艺术楼", "二舍"],
-  "一棵树广场": ["图书馆（新）", "文心亭", "青年广场", "半亩塘"],
-  "半亩塘": ["一棵树广场", "西操场", "青年广场", "文心亭"],
-  "经管楼": ["图书馆（新）", "教科楼"],
-  "教科楼": ["经管楼", "计科楼", "数计楼"],
-  "艺术楼": ["图书馆（新）", "景明餐厅", "艺术楼"],
-  "计科楼": ["教科楼", "北门", "数计楼"],
-  "数计楼": ["计科楼", "教科楼", "生科楼"],
-  "生科楼": ["数计楼", "数学楼", "教9"],
-  "数学楼": ["生科楼", "北泽园1号"],
-  "教9": ["生科楼", "心语广场"],
-  "北门": ["计科楼"],
-
-  "海苑餐厅": ["校医院", "二舍", "21号楼"],
-  "浉源餐厅": ["逸夫楼", "幼儿园", "综合楼", "19号楼"],
-  "景明餐厅": ["艺术楼", "10号楼", "东操场", "3号楼"],
-  "幼儿园": ["浉源餐厅", "综合楼"],
-  "综合楼": ["幼儿园", "浉源餐厅", "16号楼"],
-  "东操场": ["景明餐厅", "10号楼"],
-
-  "一舍": ["明德广场", "二舍"],
-  "二舍": ["一舍", "明德广场", "图书馆（新）", "海苑餐厅"],
-  "21号楼": ["海苑餐厅", "22号楼", "23号楼"],
-  "22号楼": ["21号楼", "24号楼"],
-  "23号楼": ["21号楼", "24号楼", "25号楼"],
-  "24号楼": ["22号楼", "23号楼"],
-  "25号楼": ["23号楼", "27号楼"],
-  "26号楼": ["27号楼", "19号楼"],
-  "27号楼": ["25号楼", "26号楼"],
-
-  "1号楼": ["逸夫楼", "2号楼"],
-  "2号楼": ["1号楼", "4号楼", "心语广场"],
-  "3号楼": ["景明餐厅", "5号楼"],
-  "4号楼": ["2号楼", "6号楼"],
-  "5号楼": ["3号楼", "7号楼"],
-  "6号楼": ["4号楼", "8号楼"],
-  "7号楼": ["5号楼", "9号楼"],
-  "8号楼": ["6号楼", "28号楼"],
-  "9号楼": ["7号楼", "28号楼"],
-  "28号楼": ["8号楼", "9号楼"],
-  "29号楼": ["心语广场", "20号楼"],
-  "心语广场": ["教8", "教9", "2号楼", "29号楼"],
-
-  "10号楼": ["景明餐厅", "11号楼", "东操场"],
-  "11号楼": ["10号楼", "13号楼"],
-  "12号楼": ["13号楼", "14号楼"],
-  "13号楼": ["11号楼", "12号楼", "15号楼"],
-  "14号楼": ["12号楼", "15号楼"],
-  "15号楼": ["13号楼", "14号楼", "16号楼"],
-  "16号楼": ["15号楼", "17号楼", "综合楼"],
-  "17号楼": ["16号楼", "18号楼"],
-  "18号楼": ["17号楼", "19号楼"],
-  "19号楼": ["18号楼", "浉源餐厅", "26号楼"],
-  "20号楼": ["29号楼", "浉源餐厅"],
-
-  "北泽园1号": ["数学楼", "北泽园2号"],
-  "北泽园2号": ["北泽园1号", "北泽园3号"],
-  "北泽园3号": ["北泽园2号", "北泽园4号"],
-  "北泽园4号": ["北泽园3号", "北泽园5号"],
-  "北泽园5号": ["北泽园4号", "北泽园6号"],
-  "北泽园6号": ["北泽园5号", "北泽园7号"],
-  "北泽园7号": ["北泽园6号", "北泽园8号"],
-  "北泽园8号": ["北泽园7号"]
-};
-
-
 fetch("./road/road.geojson")
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) throw new Error(`路网请求失败（HTTP ${res.status}）`);
+    return res.json();
+  })
   .then(geojson => {
     roadData.walking = {};
     roadData.ebike = {};
@@ -410,7 +321,17 @@ fetch("./road/road.geojson")
       });
     });
 
-    roadNodes = Array.from(allNodesSet);
+    roadNodes = Array.from(allNodesSet).filter(node =>
+      roadData.walking[node] || roadData.ebike[node] || roadData.driving[node]
+    );
+    if (roadNodes.length === 0) throw new Error('路网中没有可通行路段');
+    addRoadLayer(geojson);
+  })
+  .catch(error => {
+    roadNodes = [];
+    roadLoadError = error;
+    document.getElementById('pathInfo').textContent = '路网数据加载失败，请刷新页面重试。';
+    console.error('路网数据加载失败：', error);
   });
 
 
@@ -473,7 +394,9 @@ function exportData(data, type = 'json', fileName = '校园三维数据') {
 }
 
 function findFeatureByName(name) {
-  return featurePoints.find(p => p.name.includes(name));
+  const query = name.trim();
+  if (!query) return null;
+  return featurePoints.find(p => p.name === query) || featurePoints.find(p => p.name.includes(query));
 }
 
 function findNearestRoadNode(cartesian) {
@@ -493,69 +416,24 @@ function findNearestRoadNode(cartesian) {
 }
 
 function runMultiModalDijkstra(startNodeId, endNodeId, allRoadData, preferredMode) {
-  const distances = {};
-  const prev = {};
-  const unvisited = new Set();
-
-  const modeWeights = { walking: 2, ebike: 5, driving: 10 };
-  modeWeights[preferredMode] = 1.0;
-
-  const allNodes = new Set();
-  ['walking', 'ebike', 'driving'].forEach(m => Object.keys(allRoadData[m]).forEach(n => allNodes.add(n)));
-
-  for (let node of allNodes) {
-    distances[node] = Infinity;
-    prev[node] = null;
-    unvisited.add(node);
-  }
-  distances[startNodeId] = 0;
-
-  while (unvisited.size > 0) {
-    let curr = null;
-    for (let node of unvisited) {
-      if (curr === null || distances[node] < distances[curr]) curr = node;
-    }
-    if (distances[curr] === Infinity || curr === endNodeId) break;
-    unvisited.delete(curr);
-    ['driving', 'ebike', 'walking'].forEach(mode => {
-      const neighbors = allRoadData[mode][curr] || [];
-      for (let edge of neighbors) {
-        if (!unvisited.has(edge.to)) continue;
-        const weight = edge.dist * modeWeights[mode];
-        const alt = distances[curr] + weight;
-
-        if (alt < distances[edge.to]) {
-          distances[edge.to] = alt;
-          prev[edge.to] = { from: curr, mode: mode, dist: edge.dist };
-        }
-      }
-    });
-  }
-
-  const path = [];
-  const modes = [];
-  let totalDist = 0;
-  let u = endNodeId;
-  while (prev[u] !== null) {
-    const edgeInfo = prev[u];
-    const coords = u.split(",").map(Number);
-    path.unshift(Cesium.Cartesian3.fromDegrees(coords[0], coords[1]));
-    modes.unshift(edgeInfo.mode);
-    totalDist += edgeInfo.dist;
-    u = edgeInfo.from;
-  }
-
-  const startCoords = startNodeId.split(",").map(Number);
-  path.unshift(Cesium.Cartesian3.fromDegrees(startCoords[0], startCoords[1]));
-
-  return { path, distance: totalDist, modes: modes };
+  const result = CampusRouting.findShortestPath(startNodeId, endNodeId, allRoadData, preferredMode);
+  const path = result.nodes.map(node => {
+    const [lon, lat] = node.split(',').map(Number);
+    return Cesium.Cartesian3.fromDegrees(lon, lat);
+  });
+  return { path, distance: result.distance, modes: result.modes };
 }
 
-function drawMultiModePath(fullPositions, distance, modes, mainMode, rawStart, rawEnd) {
+function clearPlannedPath() {
   if (window.activePathEntities && window.activePathEntities.length > 0) {
     window.activePathEntities.forEach(entity => viewer.entities.remove(entity));
   }
   window.activePathEntities = [];
+  document.getElementById('pathInfo').textContent = '';
+}
+
+function drawMultiModePath(fullPositions, distance, modes, mainMode, rawStart, rawEnd) {
+  clearPlannedPath();
 
   const modeColors = {
     walking: Cesium.Color.fromCssColorString('#ff2200'),
@@ -630,22 +508,28 @@ function drawMultiModePath(fullPositions, distance, modes, mainMode, rawStart, r
   }
 
   const speedMap = { walking: 1.2, ebike: 5.5, driving: 10.0 };
-  const currentSpeed = speedMap[mainMode] || 1.2;
-  const minutes = Math.ceil(distance / currentSpeed / 60);
+  const seconds = modes.reduce((total, mode, index) => total +
+    Cesium.Cartesian3.distance(fullPositions[index], fullPositions[index + 1]) / speedMap[mode], 0);
+  const minutes = Math.ceil(seconds / 60);
 
   const displayColor = modeColors[mainMode].toCssColorString();
-  const modeName = { walking: '步行', ebike: '电动车', driving: '驾车' }[mainMode];
+  const modeNames = { walking: '步行', ebike: '电动车', driving: '驾车' };
+  const modeName = modeNames[mainMode];
+  const legend = [...new Set(modes)].map(mode =>
+    `<span style="color:${modeColors[mode].toCssColorString()}; margin-right: 10px;">━ ${modeNames[mode]}</span>`
+  ).join('');
 
   const pathInfoBox = document.getElementById('pathInfo');
   if (pathInfoBox) {
     pathInfoBox.innerHTML = `
       <div style="background: ${displayColor}; color: #000; padding: 6px; border-radius: 4px; font-weight: bold; text-align: center; margin-bottom: 10px;">
-        规划完成 · ${modeName}
+        规划完成 · 优先${modeName}
       </div>
       <div style="padding: 5px; border: 1px dashed ${displayColor}; border-radius: 4px;">
         <span style="color: #a0aec0;">总距离：</span><b style="color: #fff; font-size: 15px;">${distance.toFixed(0)}</b> 米<br>
         <span style="color: #a0aec0;">预计用时：</span><b style="color: #fff; font-size: 15px;">约 ${minutes}</b> 分钟
       </div>
+      <div style="margin-top: 8px; font-size: 12px;">路段图例：${legend}</div>
     `;
   }
 
@@ -995,7 +879,21 @@ qaInput.addEventListener('keydown', function (e) {
 });
 
 
+// 手动改写名称后，取消此前地图选点，避免输入内容被旧坐标覆盖。
+document.getElementById('startNode').addEventListener('input', function () {
+  startPoint = null;
+  if (startMarker) pickGraphicLayer.removeGraphic(startMarker);
+  startMarker = null;
+});
+document.getElementById('endNode').addEventListener('input', function () {
+  endPoint = null;
+  if (endMarker) pickGraphicLayer.removeGraphic(endMarker);
+  endMarker = null;
+});
+
 document.getElementById('planBtn').onclick = function () {
+  clearPlannedPath();
+  if (roadLoadError) return alert('路网数据加载失败，请刷新页面重试。');
   if (roadNodes.length === 0) return alert("路网数据解析中...");
   let finalStartId = null;
   let finalEndId = null;
@@ -1027,6 +925,10 @@ document.getElementById('planBtn').onclick = function () {
   if (!finalStartId || !finalEndId) {
     return alert("请先在地图上准确选点，或输入正确的建筑名称");
   }
+  if (finalStartId === finalEndId) {
+    document.getElementById('pathInfo').textContent = '起终点位于同一路网节点，无需规划路网路线；请核对选点位置。';
+    return;
+  }
 
   const selectedMode = document.getElementById('travelMode').value;
   const result = runMultiModalDijkstra(finalStartId, finalEndId, roadData, selectedMode);
@@ -1035,30 +937,30 @@ document.getElementById('planBtn').onclick = function () {
     drawMultiModePath(result.path, result.distance, result.modes, selectedMode, startPoint, endPoint);
 
     const uniqueModes = [...new Set(result.modes)];
-    if (uniqueModes.length > 1) {
+    if (uniqueModes.length > 1 || uniqueModes[0] !== selectedMode) {
       const modeNames = { driving: '驾车', walking: '步行', ebike: '电动车' };
       const modeDesc = uniqueModes.map(m => modeNames[m]).join(' + ');
       const infoDiv = document.getElementById('pathInfo');
       if (infoDiv) {
-        infoDiv.innerHTML += `<div style="color:#ecc94b; font-size:12px; margin-top:5px;">已切换为 [${modeDesc}] 混合路径。</div>`;
+        const description = uniqueModes.length > 1 ? `[${modeDesc}] 混合路径` : `${modeDesc}路径`;
+        infoDiv.innerHTML += `<div style="color:#ecc94b; font-size:12px; margin-top:5px;">实际采用${description}，请按各路段方式通行。</div>`;
       }
     }
   } else {
-    alert(`无法规划路径，请检查起终点是否在路网连通范围内（当前模式：${selectedMode}）。`);
+    document.getElementById('pathInfo').textContent = '起终点之间没有连通的可通行路段。';
+    alert('无法规划路径，请检查起终点是否在路网连通范围内。');
   }
 };
 
 document.getElementById('clearPathBtn').onclick = function () {
-  if (window.activePathEntities) {
-    window.activePathEntities.forEach(entity => viewer.entities.remove(entity));
-    window.activePathEntities = [];
-  }
+  clearPlannedPath();
 
   pickGraphicLayer.clear();
   startPoint = null;
   endPoint = null;
   startMarker = null;
   endMarker = null;
+  pickMode = null;
 
   document.getElementById('startNode').value = "";
   document.getElementById('endNode').value = "";

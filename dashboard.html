@@ -523,17 +523,18 @@
           </div>
           <div style="margin-bottom: 15px;">
             <label style="display:block; font-size: 12px; color: #a0aec0;">终点名称：</label>
-            <input type="text" class="query-input" id="endNode" placeholder="例如：图书馆（新）">
+            <input type="text" class="query-input" id="endNode" placeholder="例如：新图书馆">
           </div>
           <div class="query-item">
             <button class="query-btn" onclick="startPicking('start')">在地图上选起点</button>
             <button class="query-btn" onclick="startPicking('end')" style="background: #ed8936;">在地图上选终点</button>
           </div>
           <select id="travelMode" style="width: 100%; padding: 5px; margin: 10px 0;">
-            <option value="walking">步行模式</option>
-            <option value="ebike">电动车模式</option>
-            <option value="driving">驾车模式</option>
+            <option value="walking">优先步行</option>
+            <option value="ebike">优先电动车</option>
+            <option value="driving">优先驾车</option>
           </select>
+          <div style="font-size: 12px; color: #a0aec0; margin-bottom: 10px;">优先使用所选方式，必要时组合其他方式；以结果中的分段提示为准。</div>
           <button class="query-btn" id="planBtn">开始路径规划</button>
           <button class="query-btn" id="clearPathBtn" style="margin-top: 8px; background: #4a5568;">清除路径</button>
           <div id="pathInfo" style="margin-top: 15px; font-size: 13px; line-height: 1.6; color: #63b3ed;"></div>
@@ -553,6 +554,7 @@
     </div>
   </div>
 
+  <script src="./routing.js"></script>
   <script src="./script.js"></script>
 </body>
 
