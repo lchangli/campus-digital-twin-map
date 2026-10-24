@@ -21,6 +21,7 @@ let roadData = {
 const viewer = new Cesium.Viewer("cesiumContainer", {
   baseLayer: false,
   terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+  useBrowserRecommendedResolution: false,
   geocoder: false,
   baseLayerPicker: false,
   animation: false,
@@ -33,6 +34,15 @@ const viewer = new Cesium.Viewer("cesiumContainer", {
   infoBox: false,
   selectionIndicator: false
 });
+
+// 按屏幕像素密度绘制，上限为 CSS 尺寸的两倍，避免高分屏模糊或过度占用显存。
+function updateRenderResolution() {
+  viewer.resolutionScale = Math.min(1, 2 / (window.devicePixelRatio || 1));
+  viewer.scene.requestRender();
+}
+updateRenderResolution();
+window.addEventListener('resize', updateRenderResolution);
+viewer.scene.postProcessStages.fxaa.enabled = true;
 
 // 腾讯瓦片的纵坐标从南向北编号，因此保留原底图的 reverseY。
 viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
