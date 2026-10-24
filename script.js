@@ -85,7 +85,7 @@ const pickMarkers = pickDataSource.entities;
 async function addRoadLayer(geojson) {
   // 复用构建路网时取得的 GeoJSON，不重复发起数据请求。
   const roadLayer = await Cesium.GeoJsonDataSource.load(geojson, {
-    stroke: Cesium.Color.fromCssColorString('#FFD700').withAlpha(0.8),
+    stroke: Cesium.Color.WHITE.withAlpha(0.8),
     strokeWidth: 3,
     clampToGround: true
   });
