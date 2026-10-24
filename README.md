@@ -16,18 +16,18 @@
 
 校园核心区域的建筑白模与倾斜摄影：
 
-![校园核心区域三维模型近景](docs/screenshots/campus-closeup.png)
+![校园核心区域三维模型近景](docs/screenshots/campus-closeup.png?v=render-quality-20261024)
 
 <details>
 <summary>查看完整校园总览</summary>
 
-![校园三维模型总览](docs/screenshots/model-overview.png)
+![校园三维模型总览](docs/screenshots/model-overview.png?v=render-quality-20261024)
 
 </details>
 
 南门到新图书馆的步行路线：
 
-![南门到新图书馆的路径规划](docs/screenshots/walking-route.png)
+![南门到新图书馆的路径规划](docs/screenshots/walking-route.png?v=render-quality-20261024)
 
 ## 现有功能
 
